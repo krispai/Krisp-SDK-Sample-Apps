@@ -34,27 +34,17 @@ set(SAMPLE_NC_SOURCES
     ${ROOT_DIR}/src/utils/argument_parser.cpp
 )
 
-set(SAMPLE_VAD_SOURCES 
-    ${ROOT_DIR}/src/sample-vad/main.cpp
-)
-
 set(APPNAME_NC sample-nc)
-set(APPNAME_VAD sample-vad)
+#set(APPNAME_VAD sample-vad)
+#set(APPNAME_NOISE_DB sample-noise-db)
 
 add_executable(${APPNAME_NC} ${SAMPLE_NC_SOURCES})
-add_executable(${APPNAME_VAD} ${SAMPLE_VAD_SOURCES})
 
 target_include_directories(
 	${APPNAME_NC}
 	PRIVATE
     ${ROOT_DIR}/src/utils
 	${LIBSNDFILE_INC}
-)
-
-target_include_directories(
-	${APPNAME_VAD}
-	PRIVATE
-    ${ROOT_DIR}/src/utils
 )
 
 target_link_directories(

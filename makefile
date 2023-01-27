@@ -4,6 +4,10 @@ build:
 	cmake -B build -S cmake
 	${MAKE} -C build VERBOSE=1
 
+.PHONY: run
+run:
+	cd test && ./nc-sample-test-driver.sh
+
 .PHONY: clean
 clean:
 	rm -rf build
