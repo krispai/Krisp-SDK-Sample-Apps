@@ -10,7 +10,6 @@
 #include <vector>
 #include <map>
 #include <cassert>
-#include <codecvt>
 #include <locale>
 
 namespace KRISP {
@@ -73,12 +72,5 @@ ArgumentParser
         ArgumentParser(int argc, char** argv, bool o=IGNORE_OTHERS);
         ~ArgumentParser();
 };
-
-inline std::wstring convertMBString2WString(const std::string& str)
-{
-    std::wstring_convert<std::codecvt_utf8<wchar_t>> myconv;
-    std::wstring wstr = myconv.from_bytes(str);
-    return wstr;
-}
 
 #endif

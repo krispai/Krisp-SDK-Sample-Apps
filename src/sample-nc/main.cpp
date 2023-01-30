@@ -1,23 +1,15 @@
-// Headers from other projects
+#include <iostream>
+#include <string>
+#include <vector>
+#include <locale>
+#include <codecvt>
+
 #include "argument_parser.hpp"
 #include "wave_reader.hpp"
 #include "wave_writer.hpp"
 
-// Headers from standard library
-#include <iostream>
-#include <cstring>
-#include <sstream>
-#include <fstream>
-
-// Headers from other thz-sdk
 #include <krisp-audio-sdk.hpp>
 
-#define FRAME_DURATION 30
-
-void print_help(char* e) {
-    std::cerr << "\nUsage:" << std::endl;
-    std::cerr << "\t" << e << " -r rate -i input.wav -o output.wav -w weightFile" << std::endl;
-}
 
 template <typename T>
 int error(const T& e) {
@@ -25,8 +17,7 @@ int error(const T& e) {
     return 1;
 }
 
-bool parse_arguments(std::string& input, std::string& output,
-		std::string& weight, int argc, char** argv) {
+bool parse_arguments(std::string& input, std::string& output, std::string& weight, int argc, char** argv) {
     KRISP::TEST_UTILS::ArgumentParser p(argc, argv);
     p.addArgument("--input", "-i",  IMPORTANT);
     p.addArgument("--output", "-o", IMPORTANT);
@@ -42,85 +33,128 @@ bool parse_arguments(std::string& input, std::string& output,
     return true;
 }
 
-KrispAudioFrameDuration getFrameDur(size_t dur) {
-    switch (dur) {
-    case 10: return KRISP_AUDIO_FRAME_DURATION_10MS; break;
-    case 15: return KRISP_AUDIO_FRAME_DURATION_15MS; break;
-    case 20: return KRISP_AUDIO_FRAME_DURATION_20MS; break;
-    case 30: return KRISP_AUDIO_FRAME_DURATION_30MS; break;
-    case 32: return KRISP_AUDIO_FRAME_DURATION_32MS; break;
-    case 40: return KRISP_AUDIO_FRAME_DURATION_40MS; break;
+std::pair<KrispAudioFrameDuration, bool> getKrispAudioFrameDuration(size_t ms) {
+	std::pair<KrispAudioFrameDuration, bool> result;
+	result.second = true;
+    switch (ms) {
+    case 10:
+		result.first = KRISP_AUDIO_FRAME_DURATION_10MS;
+		break;
+    case 15:
+		result.first = KRISP_AUDIO_FRAME_DURATION_15MS;
+		break;
+    case 20:
+		result.first = KRISP_AUDIO_FRAME_DURATION_20MS;
+		break;
+    case 30:
+		result.first = KRISP_AUDIO_FRAME_DURATION_30MS;
+		break;
+    case 32:
+		result.first = KRISP_AUDIO_FRAME_DURATION_32MS;
+		break;
+    case 40:
+		result.first = KRISP_AUDIO_FRAME_DURATION_40MS;
+		break;
     default:
-        std::cerr<<"Unsupported Frame Duration\n";
-        return KRISP_AUDIO_FRAME_DURATION_30MS;
+		result.second = false;
+        result.first = KRISP_AUDIO_FRAME_DURATION_30MS;
     }
+	return result;
 }
 
-KrispAudioSamplingRate getSampleRate(size_t val) {
-    switch (val) {
-    case 8000:  return KRISP_AUDIO_SAMPLING_RATE_8000HZ;  break;
-    case 16000: return KRISP_AUDIO_SAMPLING_RATE_16000HZ; break;
-    case 24000: return KRISP_AUDIO_SAMPLING_RATE_24000HZ; break;
-    case 32000: return KRISP_AUDIO_SAMPLING_RATE_32000HZ; break;
-    case 44100: return KRISP_AUDIO_SAMPLING_RATE_44100HZ; break;
-    case 48000: return KRISP_AUDIO_SAMPLING_RATE_48000HZ; break;
-    case 88200: return KRISP_AUDIO_SAMPLING_RATE_88200HZ; break;
-    case 96000: return KRISP_AUDIO_SAMPLING_RATE_96000HZ; break;
+std::pair<KrispAudioSamplingRate, bool> getKrispSamplingRate(size_t rate) {
+	std::pair<KrispAudioSamplingRate, bool> result;
+	result.second = true;
+    switch (rate) {
+    case 8000:
+		result.first = KRISP_AUDIO_SAMPLING_RATE_8000HZ;
+		break;
+    case 16000:
+		result.first = KRISP_AUDIO_SAMPLING_RATE_16000HZ;
+		break;
+    case 24000:
+		result.first = KRISP_AUDIO_SAMPLING_RATE_24000HZ;
+		break;
+    case 32000:
+		result.first = KRISP_AUDIO_SAMPLING_RATE_32000HZ;
+		break;
+    case 44100:
+		result.first = KRISP_AUDIO_SAMPLING_RATE_44100HZ;
+		break;
+    case 48000: 
+		result.first = KRISP_AUDIO_SAMPLING_RATE_48000HZ; 
+		break;
+    case 88200:
+		result.first = KRISP_AUDIO_SAMPLING_RATE_88200HZ;
+		break;
+    case 96000:
+		result.first = KRISP_AUDIO_SAMPLING_RATE_96000HZ;
+		break;
     default:
-        std::cerr<<"The input wav sampling rate is not supported";
-        return KRISP_AUDIO_SAMPLING_RATE_16000HZ;
-        break;
+        result.first = KRISP_AUDIO_SAMPLING_RATE_16000HZ;
+		result.second = false;
     }
+	return result;
 }
 
-int run_test(std::string& input, std::string& output, std::string& weight) {
+int nc_wav_file(std::string& input, std::string& output, std::string& weight) {
     KRISP::TEST_UTILS::WaveReader reader;
     KRISP::TEST_UTILS::WaveWriter writer;
     std::vector<short> wavDataIn;
     std::vector<short> wavDataOut;
-    int inRate_HZ;
-    reader.read(input.c_str(), wavDataIn, inRate_HZ);
-	int outRate_HZ = inRate_HZ;
-    KrispAudioSamplingRate inRate = getSampleRate(inRate_HZ);
-    KrispAudioSamplingRate outRate = getSampleRate(outRate_HZ);
-    KrispAudioFrameDuration frameDuration = getFrameDur(FRAME_DURATION);
+    int sampleRate;
+    reader.read(input.c_str(), wavDataIn, sampleRate);
+    KrispAudioSamplingRate inRate;
+    auto samplingRateResult = getKrispSamplingRate(sampleRate);
+	if (!samplingRateResult.second) {
+		return error("Unsupported sample rate");
+	}
+    inRate = samplingRateResult.first;
+    KrispAudioSamplingRate outRate = inRate;
+	size_t frameDurationMillis = 30;
+	auto durationResult = getKrispAudioFrameDuration(frameDurationMillis);
+	if (!durationResult.second) {
+		return error("Unsupported frame duration");
+	}
+	KrispAudioFrameDuration krispFrameDuration = durationResult.first;
 
-    size_t IN_BUF_SIZE = (inRate_HZ * FRAME_DURATION)/1000;
-    size_t OUT_BUF_SIZE = (outRate_HZ * FRAME_DURATION)/1000;
+    size_t inputBufferSize = (sampleRate * frameDurationMillis) / 1000;
+    size_t outputBufferSize = inputBufferSize;
 
-    if (krispAudioGlobalInit(nullptr, 1)!=0) {
-        error("GLOBAL INITIALIZATION ERROR");
+    if (krispAudioGlobalInit(nullptr, 1) != 0) {
+        return error("Failed to initialization Krisp SDK");
 	}
 
-	if (krispAudioSetModel(
-			convertMBString2WString(weight).c_str(),
-			"model") != 0) {
-        error("GLOBAL INITIALIZATION ERROR");
+    std::wstring_convert<std::codecvt_utf8<wchar_t>> wstringConverter;
+	std::wstring model_path = wstringConverter.from_bytes(weight);
+	std::string model_alias = "model";
+	if (krispAudioSetModel(model_path.c_str(), model_alias.c_str()) != 0) {
+        return error("Error loading AI model");
 	}
 
-    KrispAudioSessionID session =
-		krispAudioNcCreateSession(inRate, outRate, frameDuration, nullptr);
+    KrispAudioSessionID session = krispAudioNcCreateSession(inRate, outRate,
+		krispFrameDuration, model_alias.c_str());
     if (nullptr == session) {
         return error("Error creating session");
     }
 
-    wavDataOut.resize(wavDataIn.size()*OUT_BUF_SIZE/IN_BUF_SIZE);
+    wavDataOut.resize(wavDataIn.size() * outputBufferSize / inputBufferSize);
     size_t i;
-    for (i = 0; (i+1)*IN_BUF_SIZE <= wavDataIn.size(); ++i ) {
+    for (i = 0; (i + 1) * inputBufferSize <= wavDataIn.size(); ++i) {
 		int result = krispAudioNcCleanAmbientNoiseInt16(
 				session,
-				&wavDataIn[i*IN_BUF_SIZE],
-				static_cast<unsigned int>(IN_BUF_SIZE),
-				&wavDataOut[i*OUT_BUF_SIZE],
-				static_cast<unsigned int>(OUT_BUF_SIZE)
+				&wavDataIn[i * inputBufferSize],
+				static_cast<unsigned int>(inputBufferSize),
+				&wavDataOut[i * outputBufferSize],
+				static_cast<unsigned int>(outputBufferSize)
 		);
-        if (0 > result) {
+        if (0 != result) {
             std::cerr << "Error cleaning noise on " << i << " frame"
 				<< std::endl;
             break;
         }
     }
-    wavDataOut.resize(i*OUT_BUF_SIZE);
+    wavDataOut.resize(i * outputBufferSize);
 
     if (0 != krispAudioNcCloseSession(session)) {
 		return error("Error in closing instance");
@@ -131,18 +165,20 @@ int run_test(std::string& input, std::string& output, std::string& weight) {
 		return error("Error in closing ALL");
 	}
 
-    writer.write(output.c_str(),wavDataOut,outRate_HZ);
-
+    writer.write(output.c_str(), wavDataOut, sampleRate);
     return 0;
 }
-
 
 int main(int argc, char** argv) {
 	std::string in, out, weight;
     if (parse_arguments(in, out, weight, argc, argv)) {
-        return run_test(in, out, weight);
+        return nc_wav_file(in, out, weight);
     } else {
-        print_help(argv[0]);
+		std::cerr << "\nUsage:\n\t" << argv[0]
+			<< " -i input.wav -o output.wav -w weightFile" << std::endl;
+		if (argc == 1) {
+			return 0;
+		}
+		return 1;
     }
-    return 0;
 }
