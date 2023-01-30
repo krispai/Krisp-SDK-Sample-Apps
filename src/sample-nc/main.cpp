@@ -18,7 +18,7 @@ int error(const T& e) {
 }
 
 bool parse_arguments(std::string& input, std::string& output, std::string& weight, int argc, char** argv) {
-    KRISP::TEST_UTILS::ArgumentParser p(argc, argv);
+    ArgumentParser p(argc, argv);
     p.addArgument("--input", "-i",  IMPORTANT);
     p.addArgument("--output", "-o", IMPORTANT);
     p.addArgument("--weight_file", "-w", IMPORTANT);
@@ -98,8 +98,8 @@ std::pair<KrispAudioSamplingRate, bool> getKrispSamplingRate(size_t rate) {
 }
 
 int nc_wav_file(std::string& input, std::string& output, std::string& weight) {
-    KRISP::TEST_UTILS::WaveReader reader;
-    KRISP::TEST_UTILS::WaveWriter writer;
+    WaveReader reader;
+    WaveWriter writer;
     std::vector<short> wavDataIn;
     std::vector<short> wavDataOut;
     int sampleRate;
