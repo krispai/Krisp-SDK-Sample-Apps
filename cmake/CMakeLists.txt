@@ -10,39 +10,25 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${ROOT_DIR}/bin)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(MKL_INC ${ROOT_DIR}/deps/mkl/inc)
-set(MKL_LIB ${ROOT_DIR}/deps/mkl/lib)
-
+# is needed to get ${LIBSNDFILE_ABSPATH} and ${LIBSNDFILE_INC}
 include(libsndfile.cmake)
+
+# Krisp SDK libraries are applied to all targets
 include(krisp.cmake)
 
-# TODO: check if useful for Linux
-#include_directories(${OpenBLAS_INCLUDE_DIRS})
-#link_directories(/opt/OpenBLAS/lib/)
-
-# define dependency to Krisp Audio SDK static library
-include_directories(${KRISP_INC})
-link_directories(${KRISP_LIB})
-link_libraries(krisp-audio-sdk-static)
-
+# Blas libraries are appleid to all targets
 include(blas.cmake)
 
-set(SAMPLE_NC_SOURCES 
+set(APPNAME_NC sample-nc)
+#set(APPNAME_VAD sample-vad)
+#set(APPNAME_NOISE_DB sample-noise-db)
+
+add_executable(${APPNAME_NC} 
     ${ROOT_DIR}/src/sample-nc/main.cpp
     ${ROOT_DIR}/src/utils/wave_reader.cpp
     ${ROOT_DIR}/src/utils/wave_writer.cpp
     ${ROOT_DIR}/src/utils/argument_parser.cpp
 )
-
-set(SAMPLE_VAD_SOURCES 
-    ${ROOT_DIR}/src/sample-vad/main.cpp
-)
-
-set(APPNAME_NC sample-nc)
-set(APPNAME_VAD sample-vad)
-
-add_executable(${APPNAME_NC} ${SAMPLE_NC_SOURCES})
-add_executable(${APPNAME_VAD} ${SAMPLE_VAD_SOURCES})
 
 target_include_directories(
 	${APPNAME_NC}
@@ -51,16 +37,4 @@ target_include_directories(
 	${LIBSNDFILE_INC}
 )
 
-target_include_directories(
-	${APPNAME_VAD}
-	PRIVATE
-    ${ROOT_DIR}/src/utils
-)
-
-target_link_directories(
-	${APPNAME_NC}
-	PRIVATE
-	${LIBSNDFILE_LIB}
-)
-
-target_link_libraries(${APPNAME_NC} sndfile)
+target_link_libraries(${APPNAME_NC} ${LIBSNDFILE_ABSPATH})

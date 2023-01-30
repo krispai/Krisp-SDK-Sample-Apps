@@ -1,22 +1,13 @@
-// Headers from this project
 #include "argument_parser.hpp"
 
-// Headers from standard library
 #include <cassert>
 #include <iostream>
 
-#define PAIR std::make_pair
 
-namespace KRISP { namespace TEST_UTILS {
-
-ArgumentParser::
-ArgumentParser()
-{
+ArgumentParser::ArgumentParser() {
 }
 
-ArgumentParser::
-ArgumentParser(int argc, char** argv, bool o)
-{
+ArgumentParser::ArgumentParser(int argc, char** argv, bool o) {
     this->argc = argc;
     this->argv = argv;
     ignore_others = o;
@@ -24,29 +15,23 @@ ArgumentParser(int argc, char** argv, bool o)
     assert(0 != argv);
 }
 
-ArgumentParser::
-~ArgumentParser()
-{
+ArgumentParser::~ArgumentParser() {
 }
 
-void ArgumentParser::
-addArgument(const Str& l, const Str& s, const ArgType t)
-{
+void ArgumentParser::addArgument(const Str& l, const Str& s, const ArgType t) {
     assert(l.size());
     assert(s.size());
     bool r = false;
 	(void)r;
-    if (!(arguments.insert(PAIR(l, ArgValue("", s, t, false))).second &&
-                arguments.insert(PAIR(s, ArgValue("", l, t, false))).second)) {
+    if (!(arguments.insert(std::make_pair(l, ArgValue("", s, t, false))).second &&
+                arguments.insert(std::make_pair(s, ArgValue("", l, t, false))).second)) {
         std::cerr << "Dublicate argument: "
             << l << " " << s << "!" << std::endl;
         return;
     }
 }
 
-const bool ArgumentParser::
-parse()
-{
+const bool ArgumentParser::parse() {
     assert(argc > 0);
     Map::iterator r = arguments.end();
     for (int i = 1; i < argc; ++i) {
@@ -84,41 +69,30 @@ parse()
     return true;
 }
 
-const bool ArgumentParser::
-getOptionalArgument(const Str& k) const
-{
+const bool ArgumentParser::getOptionalArgument(const Str& k) const {
     Map::const_iterator r = arguments.find(k);
     if (arguments.end() != r) return r->second.opt;
     return false;
 }
 
-const ArgumentParser::Str& ArgumentParser::
-getArgument(const Str& k) const
-{
+const ArgumentParser::Str& ArgumentParser::getArgument(const Str& k) const {
     Map::const_iterator r = arguments.find(k);
     if (arguments.end() != r) return r->second.value;
 	return empty_;
 }
 
-const ArgumentParser::Str& ArgumentParser::
-tryGetArgument(const Str& k, const Str& def) const
-{
+const ArgumentParser::Str&
+ArgumentParser::tryGetArgument(const Str& k, const Str& def) const {
     Map::const_iterator r = arguments.find(k);
     if (arguments.end() != r) 
         return r->second.value;
     return def;
 }
 
-const ArgumentParser::Str& ArgumentParser::
-getError() const
-{
+const ArgumentParser::Str& ArgumentParser::getError() const {
     return error;
 }
 
-const std::vector<ArgumentParser::Str>& ArgumentParser::
-getOthers() const
-{
+const std::vector<ArgumentParser::Str>& ArgumentParser::getOthers() const {
     return others;
 }
-
-}}
