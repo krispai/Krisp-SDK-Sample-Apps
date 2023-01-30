@@ -1,37 +1,13 @@
-// required by std::cerr
 #include <iostream>
-
-// required by std::string, std::wstring
 #include <string>
-
-// required by std::vector
 #include <vector>
-
-// required by std::wstring_convert
 #include <locale>
-
-// required by std::codecvt_utf8
 #include <codecvt>
 
-// required by KRISP::TEST_UTILS::ArgumentParser
 #include "argument_parser.hpp"
-
-// required by KRISP::TEST_UTILS::WaveReader
 #include "wave_reader.hpp"
-
-// required by KRISP::TEST_UTILS::WaveWriter
 #include "wave_writer.hpp"
 
-// required by
-// KrispAudioSamplingRate,
-// KrispAudioFrameDuration,
-// KrispAudioSessionID,
-// krispAudioGlobalInit,
-// krispAudioSetModel,
-// krispAudioNcCreateSession,
-// krispAudioNcCleanAmbientNoiseInt16,
-// krispAudioNcCloseSession,
-// krispAudioGlobalDestroy
 #include <krisp-audio-sdk.hpp>
 
 
