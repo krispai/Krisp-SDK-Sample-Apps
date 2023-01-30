@@ -10,7 +10,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${ROOT_DIR}/bin)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# is needed to get ${LIBSNDFILE_ABSPATH}
+# is needed to get ${LIBSNDFILE_ABSPATH} and ${LIBSNDFILE_INC}
 include(libsndfile.cmake)
 
 # Krisp SDK libraries are applied to all targets

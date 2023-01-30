@@ -6,8 +6,7 @@ if(NOT DEFINED ENV{KRISP_LIB})
 	message(FATAL_ERROR "KRISP_LIB is not defined")
 endif()
 
-find_library(LIBKRISP_ABSPATH NAMES krisp-audio-sdk-static krisp-audio-sdk
-	PATHS $ENV{KRISP_LIB})
+find_library(LIBKRISP_ABSPATH NAMES krisp-audio-sdk-static PATHS $ENV{KRISP_LIB})
 if (NOT LIBKRISP_ABSPATH) 
 	message(FATAL_ERROR "Can't find krisp-audio-sdk")
 endif()
