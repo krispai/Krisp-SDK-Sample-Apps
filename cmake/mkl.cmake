@@ -1,10 +1,4 @@
-if(NOT DEFINED ENV{MKL_LIB} AND DEFINED ENV{MKL_INC})
-	message(FATAL_ERROR "MKL_INC is defined but MKL_LIB is not") 
-elseif(NOT DEFINED ENV{MKL_INC} AND DEFINED ENV{MKL_LIB})
-	message(FATAL_ERROR "MKL_LIB is defined but MKL_INC is not") 
-endif()
-
-if(NOT DEFINED ENV{MKL_LIB} AND NOT DEFINED ENV{MKL_INC})
+if(NOT DEFINED ENV{MKL_LIB})
 	if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
 		set(MKL_PATH /opt/intel/mkl)
 		if(NOT EXISTS ${MKL_PATH})
@@ -48,17 +42,7 @@ if(NOT DEFINED ENV{MKL_LIB} AND NOT DEFINED ENV{MKL_INC})
 	else()
 		message(FATAL_ERROR "Unsupported platform: " ${CMAKE_SYSTEM_NAME})
 	endif()
-	set(MKL_INC "${MKL_PATH}/include")
 endif()
-
-##
-# Set compiler flags
-#
-#if ("${CMAKE_GENERATOR_PLATFORM}" STREQUAL "Win32")
-#	#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-#else ("${CMAKE_GENERATOR_PLATFORM}" STREQUAL "Win32")
-#	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DMKL_ILP64 -m64")
-#endif ("${CMAKE_GENERATOR_PLATFORM}" STREQUAL "Win32")
 
 set(LPREFIX ${CMAKE_STATIC_LIBRARY_PREFIX})
 set(LSUFFIX ${CMAKE_STATIC_LIBRARY_SUFFIX})
@@ -104,5 +88,4 @@ elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
 	endif ()
 endif()
 
-#include_directories(${MKL_INC})
 add_link_options(${MKL_LINK_OPTIONS})
