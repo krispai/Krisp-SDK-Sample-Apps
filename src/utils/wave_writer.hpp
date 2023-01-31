@@ -1,7 +1,6 @@
 #ifndef WAVE_WRITER_HPP
 #define WAVE_WRITER_HPP
 
-#include <sndfile.h>
 #include <vector>
 #include <string>
 
