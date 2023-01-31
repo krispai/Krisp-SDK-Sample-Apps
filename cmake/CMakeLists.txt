@@ -1,4 +1,34 @@
 cmake_minimum_required(VERSION 3.5)
+
+# This logic needs to be considered before project()
+set(_change_MSVC_flags FALSE)
+if(WIN32 AND NOT MSVC_DYNAMIC_CRT)
+  if(CMAKE_VERSION VERSION_LESS 3.15.0)
+    set(_change_MSVC_flags TRUE)
+  else()
+    # Set MSVC runtime to MultiThreaded (/MT)
+	message("-- MSVC_RUNTIME_LIBRARY set to MultiThreaded (/MT)")
+    cmake_policy(SET CMP0091 NEW)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+  endif()
+endif()
+
+# Modify compile flags to change MSVC runtime from default /MD to /MT
+if(NOT MSVC_DYNAMIC_CRT AND _change_MSVC_flags)
+	message("-- MSVC STATIC CRT is enabled...")
+    set(CompilerFlags
+            CMAKE_CXX_FLAGS
+            CMAKE_CXX_FLAGS_DEBUG
+            CMAKE_CXX_FLAGS_RELEASE
+            CMAKE_C_FLAGS
+            CMAKE_C_FLAGS_DEBUG
+            CMAKE_C_FLAGS_RELEASE
+            )
+    foreach(CompilerFlag ${CompilerFlags})
+      string(REPLACE "/MD" "/MT" ${CompilerFlag} "${${CompilerFlag}}")
+    endforeach()
+endif()
+
 project("Krisp SDK Sample Apps")
 
 # Set 'Release' or 'Debug'
