@@ -1,4 +1,9 @@
 cmake_minimum_required(VERSION 3.5)
+
+if (WIN32)
+	include(visualstudio.cmake NO_POLICY_SCOPE)
+endif()
+
 project("Krisp SDK Sample Apps")
 
 # Set 'Release' or 'Debug'
@@ -16,25 +21,34 @@ include(libsndfile.cmake)
 # Krisp SDK libraries are applied to all targets
 include(krisp.cmake)
 
-# Blas libraries are appleid to all targets
+# Blas libraries are applied to all targets
 include(blas.cmake)
 
 set(APPNAME_NC sample-nc)
 #set(APPNAME_VAD sample-vad)
 #set(APPNAME_NOISE_DB sample-noise-db)
 
-add_executable(${APPNAME_NC} 
-    ${ROOT_DIR}/src/sample-nc/main.cpp
-    ${ROOT_DIR}/src/utils/wave_reader.cpp
-    ${ROOT_DIR}/src/utils/wave_writer.cpp
-    ${ROOT_DIR}/src/utils/argument_parser.cpp
+add_compile_definitions(KRISP_AUDIO_STATIC)
+if (WIN32 AND MSVC)
+	add_compile_definitions(_ITERATOR_DEBUG_LEVEL=0)
+endif()
+
+add_executable(
+	${APPNAME_NC} 
+	${ROOT_DIR}/src/sample-nc/main.cpp
+	${ROOT_DIR}/src/utils/wave_reader.cpp
+	${ROOT_DIR}/src/utils/wave_writer.cpp
+	${ROOT_DIR}/src/utils/argument_parser.cpp
 )
 
 target_include_directories(
 	${APPNAME_NC}
 	PRIVATE
-    ${ROOT_DIR}/src/utils
+	${ROOT_DIR}/src/utils
 	${LIBSNDFILE_INC}
 )
 
-target_link_libraries(${APPNAME_NC} ${LIBSNDFILE_ABSPATH})
+target_link_libraries(
+	${APPNAME_NC}
+	${LIBSNDFILE_ABSPATH}
+)
