@@ -11,9 +11,9 @@
 
 
 enum ArgType {
-    OPTIONAL,
-    IMPORTANT,
-    DEFAULT
+	OPTIONAL,
+	IMPORTANT,
+	DEFAULT
 };
 
 class ArgValue {

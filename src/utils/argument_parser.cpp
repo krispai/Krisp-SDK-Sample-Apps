@@ -73,12 +73,12 @@ const bool ArgumentParser::getOptionalArgument(const std::string& k) const {
 	if (arguments.end() != r) {
 		return r->second.opt;
 	}
-    return false;
+	return false;
 }
 
 const std::string& ArgumentParser::getArgument(const std::string& k) const {
-    Map::const_iterator r = arguments.find(k);
-    if (arguments.end() != r) {
+	Map::const_iterator r = arguments.find(k);
+	if (arguments.end() != r) {
 		return r->second.value;
 	}
 	return empty_;
