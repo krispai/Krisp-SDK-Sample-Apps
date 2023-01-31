@@ -53,6 +53,11 @@ set(APPNAME_NC sample-nc)
 #set(APPNAME_VAD sample-vad)
 #set(APPNAME_NOISE_DB sample-noise-db)
 
+add_compile_definitions(KRISP_AUDIO_STATIC)
+if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")                                         
+	add_compile_definitions(_ITERATOR_DEBUG_LEVEL=0)
+endif()
+
 add_executable(${APPNAME_NC} 
     ${ROOT_DIR}/src/sample-nc/main.cpp
     ${ROOT_DIR}/src/utils/wave_reader.cpp
