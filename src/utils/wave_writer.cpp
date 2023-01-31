@@ -1,5 +1,7 @@
 #include "wave_writer.hpp"
 
+#include <sndfile.h>
+
 
 WaveWriter::WaveWriter() {
 }

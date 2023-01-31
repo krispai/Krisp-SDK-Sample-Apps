@@ -11,21 +11,20 @@
 
 
 enum ArgType {
-    OPTIONAL,
-    IMPORTANT,
-    DEFAULT
+	OPTIONAL,
+	IMPORTANT,
+	DEFAULT
 };
 
 class ArgValue {
-private:
-	typedef std::string Str;
 public:
-	Str     value;
-	Str     pair;
+	std::string value;
+	std::string pair;
 	ArgType type;
-	bool    opt;
+	bool opt;
 public:
-	ArgValue(const Str& v, const Str& p, const ArgType t, const bool o)
+	ArgValue(const std::string& v, const std::string& p, const ArgType t,
+		const bool o)
 	{ 
 		value = v;
 		pair = p;
@@ -36,24 +35,25 @@ public:
 
 class ArgumentParser {
 private:
-	typedef std::string Str;
-	typedef std::map<Str, ArgValue> Map;
-	typedef std::vector<Str> OtherType;
+	typedef std::map<std::string, ArgValue> Map;
+	typedef std::vector<std::string> OtherType;
 	typedef std::pair<Map::iterator, bool> Ret; 
 	Map arguments;
 	OtherType others;
 	bool ignore_others;
 	char** argv;
 	int argc;
-	Str error;
-	Str empty_;
+	std::string error;
+	std::string empty_;
 public:
-	void addArgument(const Str& l, const Str& s, const ArgType t=DEFAULT);
+	void addArgument(const std::string& l, const std::string& s,
+		const ArgType t=DEFAULT);
 	const bool parse();
-	const bool getOptionalArgument(const Str& k) const;
-	const Str& getArgument(const Str& k) const;
-	const Str& tryGetArgument(const Str& k, const Str& d) const;
-	const Str& getError() const;
+	const bool getOptionalArgument(const std::string& k) const;
+	const std::string& getArgument(const std::string& k) const;
+	const std::string& tryGetArgument(const std::string& k,
+		const std::string& d) const;
+	const std::string& getError() const;
 	const OtherType& getOthers() const;
 private:
 	ArgumentParser();

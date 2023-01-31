@@ -1,0 +1,4 @@
+1. add sample-vad and sample-noise-db reference samples.
+2. all reference samples must have the same coding style and coding practices used.
+3. update WaveReader/WaveWriter to support float sequence read and write
+4. update sample-ns to support floating point sequence processing by automatically switching between krispAudioNcCleanAmbientNoiseFloat and krispAudioNcCleanAmbientNoiseInt16 depending on WAV header
