@@ -1,11 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 
-#if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
-#	include(visualstudio.cmake)
-#endif()
-
-if (WIN32 AND MSVC)
-	include(visualstudio.cmake)
+if (WIN32)
+	include(visualstudio.cmake NO_POLICY_SCOPE)
 endif()
 
 project("Krisp SDK Sample Apps")
@@ -25,7 +21,7 @@ include(libsndfile.cmake)
 # Krisp SDK libraries are applied to all targets
 include(krisp.cmake)
 
-# Blas libraries are appleid to all targets
+# Blas libraries are applied to all targets
 include(blas.cmake)
 
 set(APPNAME_NC sample-nc)
