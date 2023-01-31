@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.5)
 
-if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+#if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+#	include(visualstudio.cmake)
+#endif()
+
+if (WIN32 AND MSVC)
 	include(visualstudio.cmake)
 endif()
 
@@ -29,7 +33,7 @@ set(APPNAME_NC sample-nc)
 #set(APPNAME_NOISE_DB sample-noise-db)
 
 add_compile_definitions(KRISP_AUDIO_STATIC)
-if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+if (WIN32 AND MSVC)
 	add_compile_definitions(_ITERATOR_DEBUG_LEVEL=0)
 endif()
 
