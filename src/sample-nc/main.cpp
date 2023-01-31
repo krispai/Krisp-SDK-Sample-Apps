@@ -20,8 +20,8 @@ int error(const T& e) {
 bool parse_arguments(std::string& input, std::string& output,
 		std::string& weight, int argc, char** argv) {
 	ArgumentParser p(argc, argv);
-	p.addArgument("--input", "-i",  IMPORTANT);
-	p.addArgument("--output", "-o", IMPORTANT);
+	p.addArgument("--input", "-i", IMPORTANT);
+	p.addArgument("--output", "-o",IMPORTANT);
 	p.addArgument("--weight_file", "-w", IMPORTANT);
 	if (p.parse()) {
 		input = p.getArgument("-i");
@@ -133,9 +133,9 @@ int nc_wav_file(std::string& input, std::string& output, std::string& weight) {
 		return error("Error loading AI model");
 	}
 
-    KrispAudioSessionID session = krispAudioNcCreateSession(inRate, outRate,
+	KrispAudioSessionID session = krispAudioNcCreateSession(inRate, outRate,
 		krispFrameDuration, model_alias.c_str());
-    if (nullptr == session) {
+	if (nullptr == session) {
 		return error("Error creating session");
 	}
 
