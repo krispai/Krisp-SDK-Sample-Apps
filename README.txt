@@ -19,5 +19,5 @@ On Mac/Linux run
 make
 
 On Windows run
-cmake -B "Visual Studio 2019"
-This will produce Visual Studio Solution project.
+make vs
+This will produce Visual Studio Solution project in vsbuild folder.
