@@ -5,7 +5,12 @@
 # Krisp Sample Apps
 
 ## Build Dependencies
-The reference samples require **libsndfile** library to read and write WAV files. It also needs KRISP archive libraries should also be provided during the build to enable noise cancellation.cancel the noise.
+The reference samples require
+* **libsndfile** library to read and write WAV files 
+* KRISP archive libraries for noise cancelling
+* Intel MKL libraries installed only on the x86/amd64 based system.
+
+The Accelerator library is used instead of Intel MKL on Apple ARM based platforms which is available in the OS out of the box.
 
 The following environement variables are mandatory. The name of each parameter is self- explanatory.
 * LIBSNDFILE_INC
@@ -13,7 +18,7 @@ The following environement variables are mandatory. The name of each parameter i
 * KRISP_INC
 * KRISP_LIB
 
-The one optional parameter is MKL_LIB that points to the directory that contains Intel MKL libraries.  If the paraemeter is not set the CMake will search for the library in the default location used by Intel MKL installer. Please consider that Intel MKL libraries are required only on x86/amd64 based systems. Accelerator library is required on Apple ARM based platforms instead.
+The optional MKL_LIB parameter is only considered on the x86/amd64 based system. If the parameter is set, then the CMAKE will look for the required Intel MKL libraries in the specified folder. If the paraemeter is not set then the CMake will search for the library in the default location used by the Intel MKL installer. 
 
 ## Build Process
 
@@ -41,6 +46,6 @@ The noise cancelling app that applies Krisp NC technology on the given PCM16 wav
 ### Usage
 ```sample-nc -i <PCM16 wav file> -o <output WAV file path> -w <path to AI model weight file>```
 
-### Test input for the app
+### Test input for the sample-nc app
 ```test/input/sample-nc-test.wav```
 
