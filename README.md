@@ -7,18 +7,18 @@
 ## Build Dependencies
 The reference samples require
 * **libsndfile** library to read and write WAV files 
-* KRISP archive libraries for noise cancelling
+* Krisp archive libraries for noise cancelling
 * Intel MKL libraries installed only on the x86/amd64 based system.
 
 The Accelerator library is used instead of Intel MKL on Apple ARM based platforms which is available in the OS out of the box.
 
-The following environement variables are mandatory. The name of each parameter is self- explanatory.
+The following environment variables are mandatory. The name of each parameter is self-explanatory.
 * LIBSNDFILE_INC
 * LIBSNDFILE_LIB
 * KRISP_INC
 * KRISP_LIB
 
-The optional MKL_LIB parameter is only considered on the x86/amd64 based system. If the parameter is set, then the CMAKE will look for the required Intel MKL libraries in the specified folder. If the paraemeter is not set then the CMake will search for the library in the default location used by the Intel MKL installer. 
+The optional MKL_LIB parameter is only considered on the x86/amd64 based system. If the parameter is set, then CMake will look for the required Intel MKL libraries in the specified folder. If the parameter is not set then CMake will search for the library in the default location used by the Intel MKL installer. 
 
 ## Build Process
 
@@ -38,10 +38,10 @@ All apps will be stored inside the **bin** folder in the root directory
 ## Apps
 ### sample-nc  
 The noise cancelling app that applies Krisp NC technology on the given PCM16 wav file using given Krisp Weight file model. The app with its codebase demonstrates 
-* how to initialise Krisp SDK and how to free memory resources if you don't need to use Krisp anymore 
+* how to initialize Krisp SDK and how to free memory resources if you don't need to use Krisp anymore 
 * how to load a single model
 * how to define the size of the frame to prepare the SDK for the processing of the frame sequence
-* how to process the sound frame by frame using Krisp
+* how to process the sound frame-by-frame using Krisp
 
 ### Usage
 ```sample-nc -i <PCM16 wav file> -o <output WAV file path> -w <path to AI model weight file>```
