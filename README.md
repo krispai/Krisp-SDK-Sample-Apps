@@ -1,4 +1,6 @@
-![Krisp Logo](Krisp.png)
+<div align="center">
+<img src="./Krisp.png" height="100px" />
+</div>
 
 # Krisp Sample Apps
 
