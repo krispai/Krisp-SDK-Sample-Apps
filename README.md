@@ -1,5 +1,5 @@
-<div align="center">
-<img src="./Krisp.png" height="100px" />
+<div align="right">
+<img src="./Krisp.png" height="75px" />
 </div>
 
 # Krisp Sample Apps
