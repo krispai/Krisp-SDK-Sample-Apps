@@ -3,6 +3,13 @@
 </div>
 
 # Krisp Sample Apps
+## Overview
+The repository provides sample apps for all desktop platforms demonstrating Krisp SDK functionality.
+The build system and the codebase is compatible with.
+* Mac M1
+* Mac Intel
+* Windows(amd64)
+* Linux(amd64)
 
 ## Build Dependencies
 The reference samples require
