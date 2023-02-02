@@ -1,3 +1,5 @@
+![Krisp Logo](Krisp.png)
+
 # Krisp Sample Apps
 
 ## Build Dependencies
@@ -24,12 +26,12 @@ How to run the build
 This will produce a Visual Studio Solution project in the **vsbuild** folder.
 
 ## Build Output
-All apps will be stored inside <bin> folder in the root directory
+All apps will be stored inside the **bin** folder in the root directory
 
 ## Apps
 ### sample-nc  
 The noise cancelling app that applies Krisp NC technology on the given PCM16 wav file using given Krisp Weight file model. The app with its codebase demonstrates 
-* how to initialise Krisp SDK and how to free memory resources if you don't need to use Krisp anymoreEDR$$$$$$$$AQW 
+* how to initialise Krisp SDK and how to free memory resources if you don't need to use Krisp anymore 
 * how to load a single model
 * how to define the size of the frame to prepare the SDK for the processing of the frame sequence
 * how to process the sound frame by frame using Krisp
