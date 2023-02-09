@@ -41,17 +41,11 @@ std::pair<KrispAudioFrameDuration, bool> getKrispAudioFrameDuration(size_t ms) {
 	case 10:
 		result.first = KRISP_AUDIO_FRAME_DURATION_10MS;
 		break;
-	case 15:
-		result.first = KRISP_AUDIO_FRAME_DURATION_15MS;
-		break;
 	case 20:
 		result.first = KRISP_AUDIO_FRAME_DURATION_20MS;
 		break;
 	case 30:
 		result.first = KRISP_AUDIO_FRAME_DURATION_30MS;
-		break;
-	case 32:
-		result.first = KRISP_AUDIO_FRAME_DURATION_32MS;
 		break;
 	case 40:
 		result.first = KRISP_AUDIO_FRAME_DURATION_40MS;
@@ -72,9 +66,6 @@ std::pair<KrispAudioSamplingRate, bool> getKrispSamplingRate(size_t rate) {
 		break;
 	case 16000:
 		result.first = KRISP_AUDIO_SAMPLING_RATE_16000HZ;
-		break;
-	case 24000:
-		result.first = KRISP_AUDIO_SAMPLING_RATE_24000HZ;
 		break;
 	case 32000:
 		result.first = KRISP_AUDIO_SAMPLING_RATE_32000HZ;
@@ -111,8 +102,8 @@ int nc_wav_file(std::string& input, std::string& output, std::string& weight) {
 		return error("Unsupported sample rate");
 	}
 	inRate = samplingRateResult.first;
-	KrispAudioSamplingRate outRate = inRate;
-	size_t frameDurationMillis = 30;
+	const KrispAudioSamplingRate outRate = inRate;
+	const size_t frameDurationMillis = 10;
 	auto durationResult = getKrispAudioFrameDuration(frameDurationMillis);
 	if (!durationResult.second) {
 		return error("Unsupported frame duration");
@@ -122,7 +113,7 @@ int nc_wav_file(std::string& input, std::string& output, std::string& weight) {
 	size_t inputBufferSize = (sampleRate * frameDurationMillis) / 1000;
 	size_t outputBufferSize = inputBufferSize;
 
-	if (krispAudioGlobalInit(nullptr, 1) != 0) {
+	if (krispAudioGlobalInit(nullptr) != 0) {
 		return error("Failed to initialization Krisp SDK");
 	}
 
