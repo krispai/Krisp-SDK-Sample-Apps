@@ -8,8 +8,7 @@
 #include "wave_reader.hpp"
 #include "wave_writer.hpp"
 
-#include <krisp-audio-sdk-nc.hpp>
-
+#include <krisp-audio-sdk-nc-stats.hpp>
 
 template <typename T>
 int error(const T& e) {
@@ -89,6 +88,24 @@ std::pair<KrispAudioSamplingRate, bool> getKrispSamplingRate(size_t rate) {
 	return result;
 }
 
+void getNcStats(KrispAudioSessionID session, KrispAudioNcStats* ncStats)
+{
+	int result = krispAudioNcWithStatsRetrieveStats(session, ncStats);
+	if (0 != result) {
+		std::cerr << "Error retrieving NC stats " << std::endl;
+		return;
+	}
+
+	std::cout << "#--- Noise/Voice stats ---" << std::endl;
+	std::cout << "# - No     Noise: " << ncStats->noiseStats.noNoiseMs << " ms" << std::endl;
+	std::cout << "# - Low    Noise: " << ncStats->noiseStats.lowNoiseMs << " ms" << std::endl;
+	std::cout << "# - Medium Noise: " << ncStats->noiseStats.mediumNoiseMs << " ms" << std::endl;
+	std::cout << "# - High   Noise: " << ncStats->noiseStats.highNoiseMs << " ms" << std::endl;
+	std::cout << "#-------------------------" << std::endl;
+	std::cout << "# - Talk time :   " << ncStats->voiceStats.talkTimeMs << " ms" << std::endl;
+	std::cout << "#-------------------------" << std::endl;
+}
+
 int nc_wav_file(std::string& input, std::string& output, std::string& weight) {
 	WaveReader reader;
 	WaveWriter writer;
@@ -124,31 +141,48 @@ int nc_wav_file(std::string& input, std::string& output, std::string& weight) {
 		return error("Error loading AI model");
 	}
 
-	KrispAudioSessionID session = krispAudioNcCreateSession(inRate, outRate,
+	KrispAudioSessionID session = krispAudioNcWithStatsCreateSession(inRate, outRate,
 		krispFrameDuration, model_alias.c_str());
 	if (nullptr == session) {
 		return error("Error creating session");
 	}
 
 	wavDataOut.resize(wavDataIn.size() * outputBufferSize / inputBufferSize);
+	KrispAudioNcPerFrameEnergyInfo perFrameEnergy;
+	KrispAudioNcStats ncStats;
 	size_t i;
 	for (i = 0; (i + 1) * inputBufferSize <= wavDataIn.size(); ++i) {
-		int result = krispAudioNcCleanAmbientNoiseInt16(
+		int result = krispAudioNcWithStatsCleanAmbientNoiseInt16(
 				session,
 				&wavDataIn[i * inputBufferSize],
 				static_cast<unsigned int>(inputBufferSize),
 				&wavDataOut[i * outputBufferSize],
-				static_cast<unsigned int>(outputBufferSize)
+				static_cast<unsigned int>(outputBufferSize),
+				&perFrameEnergy
 		);
 		if (0 != result) {
-			std::cerr << "Error cleaning noise on " << i << " frame"
-				<< std::endl;
+			std::cerr << "Error cleaning noise on " << i << " frame" << std::endl;
 			break;
+		}
+
+		std::cout << "[" << i + 1 << " x " << frameDurationMillis << "ms]"
+			<< " noiseEn: " << perFrameEnergy.noiseEnergy
+			<< ", voiceEn: " << perFrameEnergy.voiceEnergy << std::endl;
+
+		if (i % 100 == 0)
+		{
+			// It's possible to get the stats in the middle of the stream processing.
+			// It will contain the noise stats (noise level and amount) and the voice stats (talk duration)
+			// for the processing time-frame. To reset the accumulation the new session should be started.
+			getNcStats(session, &ncStats);
 		}
 	}
 	wavDataOut.resize(i * outputBufferSize);
 
-	if (0 != krispAudioNcCloseSession(session)) {
+	std::cout << "Getting Final Call stats..." << std::endl;
+	getNcStats(session, &ncStats);
+
+	if (0 != krispAudioNcWithStatsCloseSession(session)) {
 		return error("Error in closing instance");
 	}
 	session=nullptr;
