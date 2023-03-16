@@ -13,7 +13,7 @@ The build system and the codebase is compatible with.
 
 ## Build Dependencies
 The reference samples require
-* **libsndfile** library to read and write WAV files 
+* **libsndfile** library to read and write WAV files
 * Krisp archive libraries for noise cancelling
 * Intel MKL libraries installed only on the x86/amd64 based system.
 
@@ -42,8 +42,8 @@ This will produce a Visual Studio Solution project in the **vsbuild** folder.
 ## Build Output
 All apps will be stored inside the **bin** folder in the root directory
 
-## Apps
-### sample-nc  
+# Apps
+## sample-nc
 The noise cancelling app that applies Krisp NC technology on the given PCM16 wav file using given Krisp Weight file model. The app with its codebase demonstrates 
 * how to initialize Krisp SDK and how to free memory resources if you don't need to use Krisp anymore 
 * how to load a single model
@@ -52,6 +52,15 @@ The noise cancelling app that applies Krisp NC technology on the given PCM16 wav
 
 ### Usage
 ```sample-nc -i <PCM16 wav file> -o <output WAV file path> -w <path to AI model weight file>```
+
+### Test input for the sample-nc app
+[test/input/sample-nc-test.wav](test/input/sample-nc-test.wav)
+
+## sample-nc-stats
+The app with its codebase demonstrates the same features as **sample-nc** app and also includes exposure of Krisp Call Stats API available starting with Krisp Audio SDK v6.0. The noise cancelling applies on Krisp NC technology on the given PCM16 wav file using given Krisp Weight file model. The app accepts input WAV file and outputs noise cancelled WAV file just like the sample-nc and also outputs Call Stats to the console.
+
+### Usage
+```sample-nc-stats -i <PCM16 wav file> -o <output WAV file path> -w <path to AI model weight file>```
 
 ### Test input for the sample-nc app
 [test/input/sample-nc-test.wav](test/input/sample-nc-test.wav)
