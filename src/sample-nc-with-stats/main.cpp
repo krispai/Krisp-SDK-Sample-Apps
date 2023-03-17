@@ -148,7 +148,7 @@ int nc_wav_file(std::string& input, std::string& output, std::string& weight) {
 	}
 
 	wavDataOut.resize(wavDataIn.size() * outputBufferSize / inputBufferSize);
-	KrispAudioNcPerFrameEnergyInfo perFrameEnergy;
+	KrispAudioNcPerFrameInfo perFrameInfo;
 	KrispAudioNcStats ncStats;
 	size_t i;
 	for (i = 0; (i + 1) * inputBufferSize <= wavDataIn.size(); ++i) {
@@ -158,7 +158,7 @@ int nc_wav_file(std::string& input, std::string& output, std::string& weight) {
 				static_cast<unsigned int>(inputBufferSize),
 				&wavDataOut[i * outputBufferSize],
 				static_cast<unsigned int>(outputBufferSize),
-				&perFrameEnergy
+				&perFrameInfo
 		);
 		if (0 != result) {
 			std::cerr << "Error cleaning noise on " << i << " frame" << std::endl;
@@ -166,8 +166,8 @@ int nc_wav_file(std::string& input, std::string& output, std::string& weight) {
 		}
 
 		std::cout << "[" << i + 1 << " x " << frameDurationMillis << "ms]"
-			<< " noiseEn: " << perFrameEnergy.noiseEnergy
-			<< ", voiceEn: " << perFrameEnergy.voiceEnergy << std::endl;
+			<< " noiseEn: " << perFrameInfo.noiseEnergy
+			<< ", voiceEn: " << perFrameInfo.voiceEnergy << std::endl;
 
 		if (i % 100 == 0)
 		{
