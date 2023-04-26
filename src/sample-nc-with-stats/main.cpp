@@ -112,7 +112,9 @@ int nc_wav_file(std::string& input, std::string& output, std::string& weight) {
 	std::vector<short> wavDataIn;
 	std::vector<short> wavDataOut;
 	int sampleRate;
-	reader.read(input.c_str(), wavDataIn, sampleRate);
+	if (!reader.read(input.c_str(), wavDataIn, sampleRate)) {
+		return error(reader.getError());
+	}
 	KrispAudioSamplingRate inRate;
 	auto samplingRateResult = getKrispSamplingRate(sampleRate);
 	if (!samplingRateResult.second) {
@@ -191,7 +193,9 @@ int nc_wav_file(std::string& input, std::string& output, std::string& weight) {
 		return error("Error in closing ALL");
 	}
 
-	writer.write(output.c_str(), wavDataOut, sampleRate);
+	if (!writer.write(output.c_str(), wavDataOut, sampleRate)) {
+		return error(writer.getError());
+	}
 	return 0;
 }
 
