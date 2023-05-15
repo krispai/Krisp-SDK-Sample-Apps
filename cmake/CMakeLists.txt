@@ -37,6 +37,7 @@ endif()
 add_executable(
 	${APPNAME_NC} 
 	${ROOT_DIR}/src/sample-nc/main.cpp
+	${ROOT_DIR}/src/utils/sound_file.cpp
 	${ROOT_DIR}/src/utils/wave_reader.cpp
 	${ROOT_DIR}/src/utils/wave_writer.cpp
 	${ROOT_DIR}/src/utils/argument_parser.cpp
