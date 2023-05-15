@@ -7,9 +7,38 @@
 #include "argument_parser.hpp"
 #include "wave_reader.hpp"
 #include "wave_writer.hpp"
+#include "sound_file.hpp"
 
 #include <krisp-audio-sdk-nc.hpp>
 
+
+static int krispAudioNcCleanAmbientNoise(
+		KrispAudioSessionID pSession,
+		const short * pFrameIn,
+		unsigned int frameInSize,
+		short * pFrameOut,
+		unsigned int frameOutSize) {
+	return krispAudioNcCleanAmbientNoiseInt16(
+		pSession,
+		pFrameIn,
+		frameInSize,
+		pFrameOut,
+		frameOutSize);
+}
+
+static int krispAudioNcCleanAmbientNoise(
+		KrispAudioSessionID pSession,
+		const float * pFrameIn,
+		unsigned int frameInSize,
+		float * pFrameOut,
+		unsigned int frameOutSize) {
+	return krispAudioNcCleanAmbientNoiseFloat(
+		pSession,
+		pFrameIn,
+		frameInSize,
+		pFrameOut,
+		frameOutSize);
+}
 
 template <typename T>
 int error(const T& e) {
@@ -57,7 +86,7 @@ std::pair<KrispAudioFrameDuration, bool> getKrispAudioFrameDuration(size_t ms) {
 	return result;
 }
 
-std::pair<KrispAudioSamplingRate, bool> getKrispSamplingRate(size_t rate) {
+std::pair<KrispAudioSamplingRate, bool> getKrispSamplingRate(unsigned rate) {
 	std::pair<KrispAudioSamplingRate, bool> result;
 	result.second = true;
 	switch (rate) {
@@ -89,21 +118,51 @@ std::pair<KrispAudioSamplingRate, bool> getKrispSamplingRate(size_t rate) {
 	return result;
 }
 
-int nc_wav_file(std::string& input, std::string& output, std::string& weight) {
-	WaveReader reader;
+void read_all_frames(const SoundFile & sndFile,
+		std::vector<short> & frames) {
+	sndFile.read_all_frames_pcm16(&frames);
+}
+
+void read_all_frames(const SoundFile & sndFile,
+		std::vector<float> & frames) {
+	sndFile.read_all_frames_float(&frames);
+}
+
+std::pair<bool, std::string> WriteFramesToFile(
+	const std::string & fileName, 
+	const std::vector<int16_t> & frames,
+	unsigned samplingRate)
+{
+	return WriteSoundFilePCM16(fileName, frames, samplingRate);
+}
+
+std::pair<bool, std::string> WriteFramesToFile(
+	const std::string & fileName, 
+	const std::vector<float> & frames,
+	unsigned samplingRate)
+{
+	return WriteSoundFileFloat(fileName, frames, samplingRate);
+}
+
+template <typename SamplingFormat>
+int nc_wav_file_tmpl(const SoundFile & inSndFile, const std::string & output,
+		const std::string & weight) {
 	WaveWriter writer;
-	std::vector<short> wavDataIn;
-	std::vector<short> wavDataOut;
-	int sampleRate;
-	if (!reader.read(input.c_str(), wavDataIn, sampleRate)) {
-		return error(reader.getError());
+	std::vector<SamplingFormat> wavDataIn;
+	std::vector<SamplingFormat> wavDataOut;
+
+	read_all_frames(inSndFile, wavDataIn);
+
+	if (inSndFile.get_has_error()) {
+		return error(inSndFile.get_error_msg());
 	}
-	KrispAudioSamplingRate inRate;
-	auto samplingRateResult = getKrispSamplingRate(sampleRate);
+
+	unsigned samplingRate = inSndFile.get_header().get_sampling_rate();
+	auto samplingRateResult = getKrispSamplingRate(samplingRate);
 	if (!samplingRateResult.second) {
 		return error("Unsupported sample rate");
 	}
-	inRate = samplingRateResult.first;
+	KrispAudioSamplingRate inRate = samplingRateResult.first;
 	const KrispAudioSamplingRate outRate = inRate;
 	const size_t frameDurationMillis = 10;
 	auto durationResult = getKrispAudioFrameDuration(frameDurationMillis);
@@ -112,8 +171,8 @@ int nc_wav_file(std::string& input, std::string& output, std::string& weight) {
 	}
 	KrispAudioFrameDuration krispFrameDuration = durationResult.first;
 
-	size_t inputBufferSize = (sampleRate * frameDurationMillis) / 1000;
-	size_t outputBufferSize = inputBufferSize;
+	size_t inputFrameSize = (samplingRate * frameDurationMillis) / 1000;
+	size_t outputFrameSize = inputFrameSize;
 
 	if (krispAudioGlobalInit(nullptr) != 0) {
 		return error("Failed to initialization Krisp SDK");
@@ -132,15 +191,15 @@ int nc_wav_file(std::string& input, std::string& output, std::string& weight) {
 		return error("Error creating session");
 	}
 
-	wavDataOut.resize(wavDataIn.size() * outputBufferSize / inputBufferSize);
+	wavDataOut.resize(wavDataIn.size() * outputFrameSize / inputFrameSize);
 	size_t i;
-	for (i = 0; (i + 1) * inputBufferSize <= wavDataIn.size(); ++i) {
-		int result = krispAudioNcCleanAmbientNoiseInt16(
+	for (i = 0; (i + 1) * inputFrameSize <= wavDataIn.size(); ++i) {
+		int result = krispAudioNcCleanAmbientNoise(
 				session,
-				&wavDataIn[i * inputBufferSize],
-				static_cast<unsigned int>(inputBufferSize),
-				&wavDataOut[i * outputBufferSize],
-				static_cast<unsigned int>(outputBufferSize)
+				&wavDataIn[i * inputFrameSize],
+				static_cast<unsigned int>(inputFrameSize),
+				&wavDataOut[i * outputFrameSize],
+				static_cast<unsigned int>(outputFrameSize)
 		);
 		if (0 != result) {
 			std::cerr << "Error cleaning noise on " << i << " frame"
@@ -148,21 +207,40 @@ int nc_wav_file(std::string& input, std::string& output, std::string& weight) {
 			break;
 		}
 	}
-	wavDataOut.resize(i * outputBufferSize);
+	wavDataOut.resize(i * outputFrameSize);
 
 	if (0 != krispAudioNcCloseSession(session)) {
-		return error("Error in closing instance");
+		return error("Error calling krispAudioNcCloseSession");
 	}
-	session=nullptr;
+	session = nullptr;
 
 	if (0 != krispAudioGlobalDestroy()) {
-		return error("Error in closing ALL");
+		return error("Error calling krispAudioGlobalDestroy");
 	}
 
-	if (!writer.write(output.c_str(), wavDataOut, sampleRate)) {
-		return error(writer.getError());
+	auto result = WriteFramesToFile(output, wavDataOut, samplingRate);
+	if (!result.first) {
+		return error(result.second);
 	}
+
 	return 0;
+}
+
+int nc_wav_file(const std::string& input, const std::string& output,
+		const std::string& weight) {
+	SoundFile inSndFile;
+	inSndFile.load_header(input);
+	if (inSndFile.get_has_error()) {
+		return error(inSndFile.get_error_msg());
+	}
+	auto sndFileHeader = inSndFile.get_header();
+	if (sndFileHeader.get_format() == SoundFileFormat::PCM16) {
+		return nc_wav_file_tmpl<short>(inSndFile, output, weight);
+	}
+	if (sndFileHeader.get_format() == SoundFileFormat::FLOAT) {
+		return nc_wav_file_tmpl<float>(inSndFile, output, weight);
+	}
+	return error("The sound file format should be PCM16 or FLOAT.");
 }
 
 int main(int argc, char** argv) {
