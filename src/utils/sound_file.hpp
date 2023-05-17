@@ -21,55 +21,55 @@ private:
 public:
 	SoundFileHeader(): m_info{0} {
 	}
-	explicit SoundFileHeader(const SF_INFO & sf_info): m_info{sf_info} {
+	explicit SoundFileHeader(const SF_INFO & sfInfo): m_info{sfInfo} {
 	}
-	unsigned get_number_of_channels() const {
+	unsigned getNumberOfChannels() const {
 		return m_info.channels;
 	}
-	int64_t get_number_of_frames() const {
+	int64_t getNumberOfFrames() const {
 		return m_info.frames;
 	}
-	unsigned get_sampling_rate() const {
+	unsigned getSamplingRate() const {
 		return m_info.samplerate;
 	}
-	SoundFileFormat get_format() const;
+	SoundFileFormat getFormat() const;
 };
 
 
 class SoundFile {
 private:
-	SNDFILE* m_sf_handle;
-	SoundFileHeader m_sf_header;
+	SNDFILE* m_sfHandle;
+	SoundFileHeader m_sfHeader;
 
-	mutable bool m_has_error;
-	mutable std::string m_error_msg;
+	mutable bool m_hasError;
+	mutable std::string m_errorMsg;
 
-	void set_error(const std::string & error_msg) const;
+	void setError(const std::string & errorMsg) const;
 
 	template <class T>
-	void read_all_frames_tmpl(std::vector<T> *) const;
+	void readAllFramesTmpl(std::vector<T> *) const;
 
 public:
 	SoundFile();
 	~SoundFile();
 
-	bool get_has_error() const;
-	std::string get_error_msg() const;
-	const SoundFileHeader & get_header() const;
-	void load_header(const std::string & file_path);
-	void read_all_frames_pcm16(std::vector<int16_t> * frames) const;
-	void read_all_frames_float(std::vector<float> * frames) const;
+	bool getHasError() const;
+	std::string getErrorMsg() const;
+	const SoundFileHeader & getHeader() const;
+	void loadHeader(const std::string & filePath);
+	void readAllFramesPCM16(std::vector<int16_t> * frames) const;
+	void readAllFramesFloat(std::vector<float> * frames) const;
 };
 
 
-std::pair<bool, std::string> WriteSoundFilePCM16(
+std::pair<bool, std::string> writeSoundFilePCM16(
 	const std::string & file,
 	const std::vector<int16_t> & frames,
-	unsigned sampling_rate);
+	unsigned samplingRate);
 
-std::pair<bool, std::string> WriteSoundFileFloat(
+std::pair<bool, std::string> writeSoundFileFloat(
 	const std::string & file,
 	const std::vector<float> & frames,
-	unsigned sampling_rate);
+	unsigned samplingRate);
 
 #endif

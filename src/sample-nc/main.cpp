@@ -4,12 +4,14 @@
 #include <locale>
 #include <codecvt>
 
+#include <krisp-audio-sdk-nc.hpp>
+#include <krisp-audio-sdk-nc-stats.hpp>
+
 #include "argument_parser.hpp"
 #include "wave_reader.hpp"
 #include "wave_writer.hpp"
 #include "sound_file.hpp"
 
-#include <krisp-audio-sdk-nc.hpp>
 
 
 static int krispAudioNcCleanAmbientNoise(
@@ -46,7 +48,7 @@ int error(const T& e) {
 	return 1;
 }
 
-bool parse_arguments(std::string& input, std::string& output,
+bool parseArguments(std::string& input, std::string& output,
 		std::string& weight, int argc, char** argv) {
 	ArgumentParser p(argc, argv);
 	p.addArgument("--input", "-i", IMPORTANT);
@@ -118,14 +120,14 @@ std::pair<KrispAudioSamplingRate, bool> getKrispSamplingRate(unsigned rate) {
 	return result;
 }
 
-void read_all_frames(const SoundFile & sndFile,
+void readAllFrames(const SoundFile & sndFile,
 		std::vector<short> & frames) {
-	sndFile.read_all_frames_pcm16(&frames);
+	sndFile.readAllFramesPCM16(&frames);
 }
 
-void read_all_frames(const SoundFile & sndFile,
+void readAllFrames(const SoundFile & sndFile,
 		std::vector<float> & frames) {
-	sndFile.read_all_frames_float(&frames);
+	sndFile.readAllFramesFloat(&frames);
 }
 
 std::pair<bool, std::string> WriteFramesToFile(
@@ -133,7 +135,7 @@ std::pair<bool, std::string> WriteFramesToFile(
 	const std::vector<int16_t> & frames,
 	unsigned samplingRate)
 {
-	return WriteSoundFilePCM16(fileName, frames, samplingRate);
+	return writeSoundFilePCM16(fileName, frames, samplingRate);
 }
 
 std::pair<bool, std::string> WriteFramesToFile(
@@ -141,23 +143,23 @@ std::pair<bool, std::string> WriteFramesToFile(
 	const std::vector<float> & frames,
 	unsigned samplingRate)
 {
-	return WriteSoundFileFloat(fileName, frames, samplingRate);
+	return writeSoundFileFloat(fileName, frames, samplingRate);
 }
 
 template <typename SamplingFormat>
-int nc_wav_file_tmpl(const SoundFile & inSndFile, const std::string & output,
+int ncWavFileTmpl(const SoundFile & inSndFile, const std::string & output,
 		const std::string & weight) {
 	WaveWriter writer;
 	std::vector<SamplingFormat> wavDataIn;
 	std::vector<SamplingFormat> wavDataOut;
 
-	read_all_frames(inSndFile, wavDataIn);
+	readAllFrames(inSndFile, wavDataIn);
 
-	if (inSndFile.get_has_error()) {
-		return error(inSndFile.get_error_msg());
+	if (inSndFile.getHasError()) {
+		return error(inSndFile.getErrorMsg());
 	}
 
-	unsigned samplingRate = inSndFile.get_header().get_sampling_rate();
+	unsigned samplingRate = inSndFile.getHeader().getSamplingRate();
 	auto samplingRateResult = getKrispSamplingRate(samplingRate);
 	if (!samplingRateResult.second) {
 		return error("Unsupported sample rate");
@@ -179,14 +181,15 @@ int nc_wav_file_tmpl(const SoundFile & inSndFile, const std::string & output,
 	}
 
 	std::wstring_convert<std::codecvt_utf8<wchar_t>> wstringConverter;
-	std::wstring model_path = wstringConverter.from_bytes(weight);
-	std::string model_alias = "model";
-	if (krispAudioSetModel(model_path.c_str(), model_alias.c_str()) != 0) {
+	std::wstring modelPath = wstringConverter.from_bytes(weight);
+	std::string modelAlias = "model";
+	if (krispAudioSetModel(modelPath.c_str(), modelAlias.c_str()) != 0) {
 		return error("Error loading AI model");
 	}
 
 	KrispAudioSessionID session = krispAudioNcCreateSession(inRate, outRate,
-		krispFrameDuration, model_alias.c_str());
+		krispFrameDuration, modelAlias.c_str());
+
 	if (nullptr == session) {
 		return error("Error creating session");
 	}
@@ -226,27 +229,27 @@ int nc_wav_file_tmpl(const SoundFile & inSndFile, const std::string & output,
 	return 0;
 }
 
-int nc_wav_file(const std::string& input, const std::string& output,
+int ncWavFile(const std::string& input, const std::string& output,
 		const std::string& weight) {
 	SoundFile inSndFile;
-	inSndFile.load_header(input);
-	if (inSndFile.get_has_error()) {
-		return error(inSndFile.get_error_msg());
+	inSndFile.loadHeader(input);
+	if (inSndFile.getHasError()) {
+		return error(inSndFile.getErrorMsg());
 	}
-	auto sndFileHeader = inSndFile.get_header();
-	if (sndFileHeader.get_format() == SoundFileFormat::PCM16) {
-		return nc_wav_file_tmpl<short>(inSndFile, output, weight);
+	auto sndFileHeader = inSndFile.getHeader();
+	if (sndFileHeader.getFormat() == SoundFileFormat::PCM16) {
+		return ncWavFileTmpl<short>(inSndFile, output, weight);
 	}
-	if (sndFileHeader.get_format() == SoundFileFormat::FLOAT) {
-		return nc_wav_file_tmpl<float>(inSndFile, output, weight);
+	if (sndFileHeader.getFormat() == SoundFileFormat::FLOAT) {
+		return ncWavFileTmpl<float>(inSndFile, output, weight);
 	}
 	return error("The sound file format should be PCM16 or FLOAT.");
 }
 
 int main(int argc, char** argv) {
 	std::string in, out, weight;
-	if (parse_arguments(in, out, weight, argc, argv)) {
-		return nc_wav_file(in, out, weight);
+	if (parseArguments(in, out, weight, argc, argv)) {
+		return ncWavFile(in, out, weight);
 	} else {
 		std::cerr << "\nUsage:\n\t" << argv[0]
 			<< " -i input.wav -o output.wav -w weightFile" << std::endl;
