@@ -49,18 +49,12 @@ The noise cancelling app that applies Krisp NC technology on the given PCM16 wav
 * how to load a single model
 * how to define the size of the frame to prepare the SDK for the processing of the frame sequence
 * how to process the sound frame-by-frame using Krisp
+* how to process either PCM16 or FLOAT based audio file
+* how to use either regular Krisp NC API or NC API with Call Stats
+* how to to get the Call Stats for the whole processed file and for the each frame, the feature is enabled with '-s' option
 
 ### Usage
-```sample-nc -i <PCM16 wav file> -o <output WAV file path> -w <path to AI model weight file>```
-
-### Test input for the sample-nc app
-[test/input/sample-nc-test.wav](test/input/sample-nc-test.wav)
-
-## sample-nc-stats
-The app with its codebase demonstrates the same features as **sample-nc** app and also includes exposure of Krisp Call Stats API available starting with Krisp Audio SDK v6.0. The noise cancelling applies on Krisp NC technology on the given PCM16 wav file using given Krisp Weight file model. The app accepts input WAV file and outputs noise cancelled WAV file just like the sample-nc and also outputs Call Stats to the console.
-
-### Usage
-```sample-nc-stats -i <PCM16 wav file> -o <output WAV file path> -w <path to AI model weight file>```
+```sample-nc -i <PCM16 wav file> -o <output WAV file path> -w <path to AI model weight file> -s```
 
 ### Test input for the sample-nc app
 [test/input/sample-nc-test.wav](test/input/sample-nc-test.wav)
