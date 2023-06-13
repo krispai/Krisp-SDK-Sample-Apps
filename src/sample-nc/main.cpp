@@ -83,29 +83,6 @@ bool parseArguments(std::string& input, std::string& output,
 	return true;
 }
 
-std::pair<KrispAudioFrameDuration, bool> getKrispAudioFrameDuration(size_t ms) {
-	std::pair<KrispAudioFrameDuration, bool> result;
-	result.second = true;
-	switch (ms) {
-	case 10:
-		result.first = KRISP_AUDIO_FRAME_DURATION_10MS;
-		break;
-	case 20:
-		result.first = KRISP_AUDIO_FRAME_DURATION_20MS;
-		break;
-	case 30:
-		result.first = KRISP_AUDIO_FRAME_DURATION_30MS;
-		break;
-	case 40:
-		result.first = KRISP_AUDIO_FRAME_DURATION_40MS;
-		break;
-	default:
-		result.second = false;
-		result.first = KRISP_AUDIO_FRAME_DURATION_30MS;
-	}
-	return result;
-}
-
 std::pair<KrispAudioSamplingRate, bool> getKrispSamplingRate(unsigned rate) {
 	std::pair<KrispAudioSamplingRate, bool> result;
 	result.second = true;
@@ -209,13 +186,7 @@ int ncWavFileTmpl(
 	}
 	KrispAudioSamplingRate inRate = samplingRateResult.first;
 	const KrispAudioSamplingRate outRate = inRate;
-	const size_t frameDurationMillis = 10;
-	auto durationResult = getKrispAudioFrameDuration(frameDurationMillis);
-	if (!durationResult.second) {
-		return error("Unsupported frame duration");
-	}
-	KrispAudioFrameDuration krispFrameDuration = durationResult.first;
-
+	constexpr size_t frameDurationMillis = 10;
 	size_t inputFrameSize = (samplingRate * frameDurationMillis) / 1000;
 	size_t outputFrameSize = inputFrameSize;
 
@@ -231,7 +202,8 @@ int ncWavFileTmpl(
 	}
 
 	KrispAudioSessionID session = nullptr;
-
+	KrispAudioFrameDuration krispFrameDuration =
+		KRISP_AUDIO_FRAME_DURATION_10MS;
 	if (withStats) {
 		session = krispAudioNcWithStatsCreateSession(inRate, outRate,
 				krispFrameDuration, modelAlias.c_str());
