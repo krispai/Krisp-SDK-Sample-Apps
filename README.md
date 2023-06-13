@@ -15,7 +15,8 @@ The build system and the codebase is compatible with.
 The reference samples require
 * **libsndfile** library to read and write WAV files
 * Krisp archive libraries for noise cancelling
-* Intel MKL libraries installed only on the x86/amd64 based system.
+* Intel MKL libraries installed only on the x86/amd64 based system - bunfled with Krisp Audio SDK starting from v7.0
+* Libresample - bundled with Krisp Audio SDK starting from v7.0
 
 The Accelerator library is used instead of Intel MKL on Apple ARM based platforms which is available in the OS out of the box.
 
@@ -25,7 +26,12 @@ The following environment variables are mandatory. The name of each parameter is
 * KRISP_INC
 * KRISP_LIB
 
-The optional MKL_LIB parameter is only considered on the x86/amd64 based system. If the parameter is set, then CMake will look for the required Intel MKL libraries in the specified folder. If the parameter is not set then CMake will search for the library in the default location used by the Intel MKL installer. 
+The MKL_LIB parameter is mandatory on the x86/amd64 based system. The parameter should point to the MKL libraries folder which is packaged with Krisp Audio SDK for x86/amd64 based systems starting from v7.0. The library is required by Krisp Audio SDK.
+
+The LIBRESAMPLE_LIB parameter is mandatory and required by Krisp Audio SDK. The parameter should point to the folder containing libresample library which is bundled with Krisp Audio SDK starting from v7.0.
+
+The LIBRESAMPLE_LIB, LIBSNDFILE_INC, KRISP_INC, KRISP_LIB are required by the sample apps in the repository.
+
 
 ## Build Process
 
