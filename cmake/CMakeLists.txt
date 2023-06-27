@@ -24,9 +24,6 @@ include(krisp.cmake)
 # Libresample is required for Krisp SDK
 include(libresample.cmake)
 
-# Blas libraries are applied to all targets
-include(blas.cmake)
-
 set(APPNAME_NC sample-nc)
 #set(APPNAME_VAD sample-vad)
 
@@ -53,3 +50,6 @@ target_link_libraries(
 	${APPNAME_NC}
 	${LIBSNDFILE_ABSPATH}
 )
+
+# Blas libraries are applied to ${APPNAME_NC} target
+include(blas.cmake)
