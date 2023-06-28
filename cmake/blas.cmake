@@ -1,6 +1,6 @@
 if (${CMAKE_SYSTEM_PROCESSOR} MATCHES ".*(arm|ARM).*")
 	message(STATUS "ARM CPU is used")
-	link_libraries(blas)
+	target_link_libraries(${APPNAME_NC} blas)
 else()
 	include(mkl.cmake)
 endif()
