@@ -14,11 +14,11 @@ The build system and the codebase is compatible with.
 ## Build Dependencies
 The reference samples require
 * **libsndfile** library to read and write WAV files
-* Krisp archive libraries for noise cancelling
-* Intel MKL libraries installed only on the x86/amd64 based system - bunfled with Krisp Audio SDK starting from v7.0
+* Krisp archive libraries for the noise canceling
+* Intel MKL libraries installed only on the x86/amd64 based system - bundled with Krisp Audio SDK starting from v7.0
 * Libresample - bundled with Krisp Audio SDK starting from v7.0
 
-The Accelerator library is used instead of Intel MKL on Apple ARM based platforms which is available in the OS out of the box.
+The Accelerator library is used instead of Intel MKL on Apple ARM-based platforms which is available in the OS out of the box.
 
 The following environment variables are mandatory. The name of each parameter is self-explanatory.
 * LIBSNDFILE_INC
@@ -26,11 +26,13 @@ The following environment variables are mandatory. The name of each parameter is
 * KRISP_INC
 * KRISP_LIB
 
-The MKL_LIB parameter is mandatory on the x86/amd64 based system. The parameter should point to the MKL libraries folder which is packaged with Krisp Audio SDK for x86/amd64 based systems starting from v7.0. The library is required by Krisp Audio SDK.
+The MKL_LIB parameter is mandatory on the x86/amd64-based system. The parameter should point to the MKL libraries folder which is packaged with Krisp Audio SDK for x86/amd64-based systems starting from v7.0.
+
+KRISP_INC and KRISP_LIB should point to the Krisp SDK header directory and library directory.
 
 The LIBRESAMPLE_LIB parameter is mandatory and required by Krisp Audio SDK. The parameter should point to the folder containing libresample library which is bundled with Krisp Audio SDK starting from v7.0.
 
-The LIBRESAMPLE_LIB, LIBSNDFILE_INC, KRISP_INC, KRISP_LIB are required by the sample apps in the repository.
+LIBSNDFILE_INC and LIBSNDFILE_LIB directories is required by the sample-nc app for the purpose of reading and writing WAV PCM-based audio files. It is not the SDK requirement.
 
 
 ## Build Process
