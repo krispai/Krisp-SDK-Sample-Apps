@@ -39,6 +39,8 @@ elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
 		pthread m dl
 	)
 elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
-	set(MKL_LINK_OPTIONS ${MKL_LIB_LIST})
-	add_link_options(${MKL_LINK_OPTIONS})
+	target_link_libraries(
+		${APPNAME_NC}
+		${MKL_LIB_LIST}
+	)
 endif()
