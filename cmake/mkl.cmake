@@ -33,7 +33,11 @@ endif ()
 if(${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
 	include(mkl.linux.cmake)
 elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
-	link_libraries(${MKL_LIB_LIST} pthread m dl)
+	target_link_libraries(
+		${APPNAME_NC}
+		${MKL_LIB_LIST}
+		pthread m dl
+	)
 elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
 	set(MKL_LINK_OPTIONS ${MKL_LIB_LIST})
 	add_link_options(${MKL_LINK_OPTIONS})
