@@ -7,3 +7,11 @@ target_link_libraries(
 	m
 	dl
 )
+
+target_link_libraries(
+	${DLLNAME}
+	"$<LINK_GROUP:RESCAN,${MKL_LIB_LIST}>"
+	pthread
+	m
+	dl
+)
