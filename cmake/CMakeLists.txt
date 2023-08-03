@@ -57,11 +57,30 @@ target_include_directories(
 	PRIVATE
 	${ROOT_DIR}/src/utils
 	${LIBSNDFILE_INC}
+	$ENV{KRISP_INC}
+)
+
+target_include_directories(
+	${DLLNAME}
+	PRIVATE
+	$ENV{KRISP_INC}
+)
+
+target_include_directories(
+	${APPNAME_DLL}
+	PRIVATE
+	$ENV{KRISP_INC}
 )
 
 target_link_libraries(
 	${APPNAME_NC}
 	${LIBSNDFILE_ABSPATH}
+	${LIBKRISP_ABSPATH}
+)
+
+target_link_libraries(
+	${DLLNAME}
+	${LIBKRISP_ABSPATH}
 )
 
 target_link_libraries(
