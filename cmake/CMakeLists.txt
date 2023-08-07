@@ -76,11 +76,13 @@ target_link_libraries(
 	${APPNAME_NC}
 	${LIBSNDFILE_ABSPATH}
 	${LIBKRISP_ABSPATH}
+	${LIBRESAMPLE_ABSPATH}
 )
 
 target_link_libraries(
 	${DLLNAME}
 	${LIBKRISP_ABSPATH}
+	${LIBRESAMPLE_ABSPATH}
 )
 
 target_link_libraries(
