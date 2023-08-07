@@ -66,3 +66,11 @@ The noise cancelling app that applies Krisp NC technology on the given PCM16 wav
 
 ### Test input for the sample-nc app
 [test/input/sample-nc-test.wav](test/input/sample-nc-test.wav)
+
+## libkrispdll with dll-test-app
+
+### Description
+The sample demonstrates how to build dynamic link library using Krisp static libraries.
+
+#### Where it should be useful
+Dynamic link libraries for Linux are always bound to specific GLIBC version. It means that you will not be able to use them on older Linux systems. This samples can be used to build DLL libraries for old Linux systems using Krisp static libraries.
