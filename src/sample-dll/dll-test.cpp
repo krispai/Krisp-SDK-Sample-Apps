@@ -4,11 +4,13 @@
 #include <krisp-audio-sdk-nc-stats.hpp>
 
 
+int dllFunction();
+
+
 int main() {
-
 	std::cout << "Hello World" << std::endl;
-
 	krispAudioGlobalInit(nullptr);
 	krispAudioGlobalDestroy();
+	dllFunction();
 	return 0;
 }
