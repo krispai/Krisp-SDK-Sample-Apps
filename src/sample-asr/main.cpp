@@ -3,6 +3,7 @@
 #include <vector>
 #include <locale>
 #include <codecvt>
+#include <typeinfo>
 
 #include <krisp-audio-sdk-asr.hpp>
 
@@ -23,6 +24,20 @@ static int krispAudioAsrProcess(
 	return krispAudioAsrProcessFrameFloat(pSession, frame);
 }
 
+// inline std::string convertWString2MBString(const std::wstring& wstr)
+// {
+//     std::wstring_convert<std::codecvt_utf8<wchar_t>> myconv;
+//     std::string str = myconv.to_bytes(wstr);
+//     return str;
+// }
+
+// inline std::wstring convertMBString2WString(const std::string& str)
+// {
+//     std::wstring_convert<std::codecvt_utf8<wchar_t>> myconv;
+//     std::wstring wstr = myconv.from_bytes(str);
+//     return wstr;
+// }
+
 template <typename T>
 int error(const T &e)
 {
@@ -30,17 +45,37 @@ int error(const T &e)
 	return 1;
 }
 
-bool parseArguments(std::string &input, std::string &weight, std::string customVocab, int argc, char **argv)
+bool parseArguments(int argc, char **argv, std::string &input, std::string &weight, KrispAudioAsrSessionConfig& asrCfg)
 {
 	ArgumentParser p(argc, argv);
 	p.addArgument("--input", "-i", IMPORTANT);
 	p.addArgument("--weight_file", "-w", IMPORTANT);
-	p.addArgument("--custom_vocab", "-cv", IMPORTANT);
+	p.addArgument("--do_pc", "-pc", ARG_OPTIONAL);
+    p.addArgument("--do_itn", "-itn", ARG_OPTIONAL);
+    p.addArgument("--do_rr", "-rr", ARG_OPTIONAL);
+    p.addArgument("--do_pii", "-pii", ARG_OPTIONAL);
+    p.addArgument("--use_vad", "-vad", ARG_OPTIONAL);
+    p.addArgument("--diarize", "-diar", ARG_OPTIONAL);
+	p.addArgument("--custom_vocab", "-cv", ARG_OPTIONAL);
 	if (p.parse())
 	{
 		input = p.getArgument("-i");
 		weight = p.getArgument("-w");
-		customVocab = p.getArgument("-cv");
+
+		auto doPc = p.getArgument("-pc", "0");
+		auto doItn = p.getArgument("-itn", "0");
+		auto doRr = p.getArgument("-rr", "0");
+		auto doPii = p.getArgument("-pii", "0");
+		auto vad = p.getArgument("-vad", "0");
+		auto diarize = p.getArgument("-diar", "0");
+		auto customVocab = p.getArgument("-cv");
+
+		asrCfg.enablePc = std::stoi(doPc);
+		asrCfg.enableItn = std::stoi(doItn);
+		asrCfg.enableRr = std::stoi(doRr);
+		asrCfg.enablePii = std::stoi(doPii);
+		asrCfg.enableDiarization = std::stoi(diarize);
+		asrCfg.customVocabPath = readCustomVocabulary(customVocab);
 	}
 	else
 	{
@@ -121,8 +156,106 @@ std::vector<std::string> readCustomVocabulary(const std::string& customVocabular
     return customVocabulary;
 }
 
+void writeOutputToFile(KrispAudioAsrResult& asrResult, KrispAudioAsrSessionConfig& asrCfg)
+{
+    auto getResult = [&asrResult, this](size_t streamIndex)
+    {
+        auto& words = asrResult.words;
+        auto& speakers = asrResult.speakers;
+        auto& resultText = _resultText;
+        auto& resultConfText = _resultTimestampsAndConf;
+        auto& resultSpeakerEmbeddings = _resultSpeakerEmbeddings;
+
+        if (asrCfg.enableDiarization)
+        {
+            for (size_t c = 0; c < speakers.size(); ++c)
+            {
+                auto& el = speakers[c];
+                const auto sp = el.speakerId;
+                const auto start = el.startWordIndex;
+                const auto end = el.endWordIndex;
+                const auto& emb = el.speakerEmbedding;
+
+                std::string diarText = std::to_string(c) + "\n";
+                diarText += secondToHMS(words[start].start) + " --> " + secondToHMS(words[end].end) + "\n";
+                diarText += "[" + sp + "]: ";
+
+                // Speaker embeddings text.
+                resultSpeakerEmbeddings += diarText;
+
+                for (size_t i = start; i <= end; ++i)
+                {
+                    diarText += Utils::getString(words[i].text) + " ";
+                }
+
+                if (!diarText.empty())
+                {
+                    diarText.pop_back();
+                }
+
+                diarText += "\n\n";
+                resultText += Utils::getWString(diarText);
+
+                // Collect speaker embeddings text.
+                for (const auto& el : emb)
+                {
+                    resultSpeakerEmbeddings += std::to_string(el) + " ";
+                }
+
+                resultSpeakerEmbeddings += "\n\n";
+            }
+        }
+        else
+        {
+            for (const auto& el : words)
+            {
+                resultText += el.text + L" ";
+            }
+
+            if (!words.empty())
+            {
+                resultText.pop_back();
+            }
+        }
+
+        for (const auto& el : words)
+        {
+            std::stringstream ss;
+            ss << Utils::getString(el.text) << "\t" << el.start << "\t" << el.end << "\t" << el.confidence << std::endl;
+            resultConfText += Utils::getWString(ss.str());
+        }
+    };
+
+    getResult();
+
+    auto saveResults = [this]()
+    {
+        const auto& resultText = _resultText;
+        const auto& resultTimestampsAndConf = _resultTimestampsAndConf;
+        const auto& resultSpeakerEmbeddings = _resultSpeakerEmbeddings;
+        const bool diarizationEnabled = asrCfg.enableDiarization;
+
+        std::ofstream textOut(generateOutputFileName(_cmd, (diarizationEnabled ? ".diar" : ".asr")));
+        textOut << Utils::getString(resultText);
+        textOut.close();
+
+        std::ofstream confOut(generateOutputFileName(_cmd, ".tms"));
+        confOut << Utils::getString(resultTimestampsAndConf);
+        confOut.close();
+
+        if (diarizationEnabled)
+        {
+            std::ofstream speakerEmbeddingsOut(generateOutputFileName(_cmd, ".emb"));
+            speakerEmbeddingsOut << resultSpeakerEmbeddings;
+            speakerEmbeddingsOut.close();
+        }
+    };
+
+    saveResults();
+}
+
 template <typename SamplingFormat>
-int asrWavFileTmpl(const SoundFile &inSndFile, const std::string &weight, std::string customVocab)
+int asrWavFileTmpl(const SoundFile &inSndFile, const std::string &weight, KrispAudioAsrSessionConfig& asrCfg)
 {
 	std::vector<SamplingFormat> wavDataIn;
 
@@ -160,21 +293,23 @@ int asrWavFileTmpl(const SoundFile &inSndFile, const std::string &weight, std::s
 	KrispAudioSessionID session = nullptr;
 	KrispAudioFrameDuration krispFrameDuration = KRISP_AUDIO_FRAME_DURATION_10MS;
 
-	KrispAudioAsrSessionConfig asrCfg;
-	asrCfg.enablePc = true;
-    asrCfg.enableItn = true;
-    asrCfg.enableRepetitionRemoval = true;
-    asrCfg.enablePiiFiltering = true;
-    asrCfg.enableDiarization = true;
-    asrCfg.customVocabulary = readCustomVocabulary(customVocab);
+	if (typeid(SamplingFormat) == typeid(short))
+	{
+        session = krispAudioAsrCreateSessionInt16(inRate, outRate, asrCfg, modelAlias.c_str());
+    }
+	else if (typeid(SamplingFormat) == typeid(float))
+	{
+        session = krispAudioAsrCreateSessionFloat(inRate, outRate, asrCfg, modelAlias.c_str());
+    }
+	else
+	{
+        return error("Error invalid template type");
+    }
 
-	session = krispAudioAsrCreateSession(inRate, outRate, asrCfg, modelAlias.c_str());
 	if (nullptr == session)
 	{
-		return error("Error creating session");
+		return error("Error creating ASR session");
 	}
-
-	KrispAudioNcPerFrameInfo perFrameInfo;
 
 	size_t i;
 	for (i = 0; (i + 1) * inputFrameSize <= wavDataIn.size(); ++i)
@@ -191,6 +326,7 @@ int asrWavFileTmpl(const SoundFile &inSndFile, const std::string &weight, std::s
 		}
 	}
 
+	// Audio stream ended, generate transcript.
 	KrispAudioAsrResult asrResult;
 	if (0 != krispAudioAsrGenerateResult(session, asrResult))
 	{
@@ -212,7 +348,7 @@ int asrWavFileTmpl(const SoundFile &inSndFile, const std::string &weight, std::s
 	return 0;
 }
 
-int asrWavFile(const std::string &input, const std::string &weight, std::string customVocab)
+int asrWavFile(const std::string &input, const std::string &weight, KrispAudioAsrSessionConfig& asrCfg)
 {
 	SoundFile inSndFile;
 
@@ -226,12 +362,12 @@ int asrWavFile(const std::string &input, const std::string &weight, std::string 
 
 	if (sndFileHeader.getFormat() == SoundFileFormat::PCM16)
 	{
-		return asrWavFileTmpl<short>(inSndFile, weight, customVocab);
+		return asrWavFileTmpl<short>(inSndFile, weight, asrCfg);
 	}
 
 	if (sndFileHeader.getFormat() == SoundFileFormat::FLOAT)
 	{
-		return asrWavFileTmpl<float>(inSndFile, weight, customVocab);
+		return asrWavFileTmpl<float>(inSndFile, weight, asrCfg);
 	}
 
 	return error("The sound file format should be PCM16 or FLOAT.");
@@ -241,11 +377,11 @@ int main(int argc, char **argv)
 {
 	std::string inputAudio;
 	std::string weight;
-	std::string customVocab;
+	KrispAudioAsrSessionConfig asrCfg;
 
-	if (parseArguments(in, weight, argc, argv))
+	if (parseArguments(argc, argv, inputAudio, weight, asrCfg))
 	{
-		return asrWavFile(in, weight, customVocab);
+		return asrWavFile(inputAudio, weight, asrCfg);
 	}
 	else
 	{
