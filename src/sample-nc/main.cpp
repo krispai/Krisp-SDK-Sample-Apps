@@ -11,7 +11,6 @@
 #include "sound_file.hpp"
 
 
-
 static int krispAudioNcCleanAmbientNoise(
 		KrispAudioSessionID pSession,
 		const short * pFrameIn,
@@ -99,8 +98,8 @@ std::pair<KrispAudioSamplingRate, bool> getKrispSamplingRate(unsigned rate) {
 	case 44100:
 		result.first = KRISP_AUDIO_SAMPLING_RATE_44100HZ;
 		break;
-	case 48000: 
-		result.first = KRISP_AUDIO_SAMPLING_RATE_48000HZ; 
+	case 48000:
+		result.first = KRISP_AUDIO_SAMPLING_RATE_48000HZ;
 		break;
 	case 88200:
 		result.first = KRISP_AUDIO_SAMPLING_RATE_88200HZ;
@@ -126,7 +125,7 @@ void readAllFrames(const SoundFile & sndFile,
 }
 
 std::pair<bool, std::string> WriteFramesToFile(
-	const std::string & fileName, 
+	const std::string & fileName,
 	const std::vector<int16_t> & frames,
 	unsigned samplingRate)
 {
@@ -134,7 +133,7 @@ std::pair<bool, std::string> WriteFramesToFile(
 }
 
 std::pair<bool, std::string> WriteFramesToFile(
-	const std::string & fileName, 
+	const std::string & fileName,
 	const std::vector<float> & frames,
 	unsigned samplingRate)
 {
@@ -162,6 +161,68 @@ void getNcStats(KrispAudioSessionID session, KrispAudioNcStats* ncStats)
 	std::cout << "# - Talk time :   " <<
 		ncStats->voiceStats.talkTimeMs << " ms" << std::endl;
 	std::cout << "#-------------------------" << std::endl;
+}
+
+KrispAudioSessionID krispAudioNcWithStatsCreateSession(
+    KrispAudioSamplingRate inputSampleRate,
+    KrispAudioSamplingRate outputSampleRate,
+    KrispAudioFrameDuration frameDuration,
+    const char* modelName,
+	short)
+{
+	return krispAudioNcWithStatsCreateSessionInt16(
+		inputSampleRate,
+		outputSampleRate,
+		frameDuration,
+		modelName);
+}
+
+KrispAudioSessionID krispAudioNcWithStatsCreateSession(
+    KrispAudioSamplingRate inputSampleRate,
+    KrispAudioSamplingRate outputSampleRate,
+    KrispAudioFrameDuration frameDuration,
+    const char* modelName,
+	float)
+{
+	return krispAudioNcWithStatsCreateSessionFloat(
+		inputSampleRate,
+		outputSampleRate,
+		frameDuration,
+		modelName);
+}
+
+KRISP_AUDIO_API KrispAudioSessionID krispAudioNcWithStatsCreateSessionInt16(
+    KrispAudioSamplingRate inputSampleRate,
+    KrispAudioSamplingRate outputSampleRate,
+    KrispAudioFrameDuration frameDuration,
+    const char* modelName);
+
+KrispAudioSessionID krispAudioNcCreateSession(
+    KrispAudioSamplingRate inputSampleRate,
+    KrispAudioSamplingRate outputSampleRate,
+    KrispAudioFrameDuration frameDuration,
+    const char* modelName,
+	short)
+{
+	return krispAudioNcCreateSessionInt16(
+		inputSampleRate,
+		outputSampleRate,
+		frameDuration,
+		modelName);
+}
+
+KrispAudioSessionID krispAudioNcCreateSession(
+    KrispAudioSamplingRate inputSampleRate,
+    KrispAudioSamplingRate outputSampleRate,
+    KrispAudioFrameDuration frameDuration,
+    const char* modelName,
+	float)
+{
+	return krispAudioNcCreateSessionFloat(
+		inputSampleRate,
+		outputSampleRate,
+		frameDuration,
+		modelName);
 }
 
 template <typename SamplingFormat>
@@ -206,11 +267,11 @@ int ncWavFileTmpl(
 		KRISP_AUDIO_FRAME_DURATION_10MS;
 	if (withStats) {
 		session = krispAudioNcWithStatsCreateSession(inRate, outRate,
-				krispFrameDuration, modelAlias.c_str());
+				krispFrameDuration, modelAlias.c_str(), SamplingFormat());
 	}
 	else {
 		session = krispAudioNcCreateSession(inRate, outRate,
-				krispFrameDuration, modelAlias.c_str());
+				krispFrameDuration, modelAlias.c_str(), SamplingFormat());
 	}
 
 

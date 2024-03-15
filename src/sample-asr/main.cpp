@@ -1,4 +1,7 @@
 #include <iostream>
+#include <fstream>
+#include <sstream>
+#include <filesystem>
 #include <string>
 #include <vector>
 #include <locale>
@@ -9,6 +12,7 @@
 
 #include "argument_parser.hpp"
 #include "sound_file.hpp"
+
 
 static int krispAudioAsrProcess(
 	KrispAudioSessionID pSession,
@@ -24,19 +28,19 @@ static int krispAudioAsrProcess(
 	return krispAudioAsrProcessFrameFloat(pSession, frame);
 }
 
-// inline std::string convertWString2MBString(const std::wstring& wstr)
-// {
-//     std::wstring_convert<std::codecvt_utf8<wchar_t>> myconv;
-//     std::string str = myconv.to_bytes(wstr);
-//     return str;
-// }
+inline std::string convertWstrToStr(const std::wstring& wstr)
+{
+    std::wstring_convert<std::codecvt_utf8<wchar_t>> myconv;
+    std::string str = myconv.to_bytes(wstr);
+    return str;
+}
 
-// inline std::wstring convertMBString2WString(const std::string& str)
-// {
-//     std::wstring_convert<std::codecvt_utf8<wchar_t>> myconv;
-//     std::wstring wstr = myconv.from_bytes(str);
-//     return wstr;
-// }
+inline std::wstring convertStrToWstr(const std::string& str)
+{
+    std::wstring_convert<std::codecvt_utf8<wchar_t>> myconv;
+    std::wstring wstr = myconv.from_bytes(str);
+    return wstr;
+}
 
 template <typename T>
 int error(const T &e)
@@ -45,37 +49,62 @@ int error(const T &e)
 	return 1;
 }
 
+std::vector<std::string> readCustomVocabulary(const std::string& customVocabularyPath)
+{
+    if (customVocabularyPath.empty())
+    {
+        return std::vector<std::string>{};
+    }
+
+    std::ifstream customVocabularyFile(customVocabularyPath);
+    if (!customVocabularyFile.is_open())
+    {
+        throw std::logic_error("Failed to open the custom vocabulary file");
+    }
+
+    std::vector<std::string> customVocabulary;
+    std::string line;
+    while (std::getline(customVocabularyFile, line))
+    {
+        customVocabulary.push_back(line);
+    }
+
+    customVocabularyFile.close();
+
+    return customVocabulary;
+}
+
 bool parseArguments(int argc, char **argv, std::string &input, std::string &weight, KrispAudioAsrSessionConfig& asrCfg)
 {
 	ArgumentParser p(argc, argv);
 	p.addArgument("--input", "-i", IMPORTANT);
 	p.addArgument("--weight_file", "-w", IMPORTANT);
-	p.addArgument("--do_pc", "-pc", ARG_OPTIONAL);
-    p.addArgument("--do_itn", "-itn", ARG_OPTIONAL);
-    p.addArgument("--do_rr", "-rr", ARG_OPTIONAL);
-    p.addArgument("--do_pii", "-pii", ARG_OPTIONAL);
-    p.addArgument("--use_vad", "-vad", ARG_OPTIONAL);
-    p.addArgument("--diarize", "-diar", ARG_OPTIONAL);
-	p.addArgument("--custom_vocab", "-cv", ARG_OPTIONAL);
+	p.addArgument("--do_pc", "-pc", OPTIONAL);
+    p.addArgument("--do_itn", "-itn", OPTIONAL);
+    p.addArgument("--do_rr", "-rr", OPTIONAL);
+    p.addArgument("--do_pii", "-pii", OPTIONAL);
+    p.addArgument("--use_vad", "-vad", OPTIONAL);
+    p.addArgument("--diarize", "-diar", OPTIONAL);
+	p.addArgument("--custom_vocab", "-cv", OPTIONAL);
 	if (p.parse())
 	{
 		input = p.getArgument("-i");
 		weight = p.getArgument("-w");
 
-		auto doPc = p.getArgument("-pc", "0");
-		auto doItn = p.getArgument("-itn", "0");
-		auto doRr = p.getArgument("-rr", "0");
-		auto doPii = p.getArgument("-pii", "0");
-		auto vad = p.getArgument("-vad", "0");
-		auto diarize = p.getArgument("-diar", "0");
-		auto customVocab = p.getArgument("-cv");
+		auto doPc = p.tryGetArgument("-pc", "0");
+		auto doItn = p.tryGetArgument("-itn", "0");
+		auto doRr = p.tryGetArgument("-rr", "0");
+		auto doPii = p.tryGetArgument("-pii", "0");
+		auto vad = p.tryGetArgument("-vad", "0");
+		auto diarize = p.tryGetArgument("-diar", "0");
+		auto customVocab = p.tryGetArgument("-cv", "");
 
 		asrCfg.enablePc = std::stoi(doPc);
 		asrCfg.enableItn = std::stoi(doItn);
-		asrCfg.enableRr = std::stoi(doRr);
-		asrCfg.enablePii = std::stoi(doPii);
+		asrCfg.enableRepetitionRemoval = std::stoi(doRr);
+		asrCfg.enablePiiFiltering = std::stoi(doPii);
 		asrCfg.enableDiarization = std::stoi(diarize);
-		asrCfg.customVocabPath = readCustomVocabulary(customVocab);
+		asrCfg.customVocabulary = readCustomVocabulary(customVocab);
 	}
 	else
 	{
@@ -131,34 +160,47 @@ void readAllFrames(const SoundFile &sndFile,
 	sndFile.readAllFramesFloat(&frames);
 }
 
-std::vector<std::string> readCustomVocabulary(const std::string& customVocabularyPath)
+// TODO: fix this
+std::wstring _resultText;
+std::wstring _resultTimestampsAndConf;
+std::string _resultSpeakerEmbeddings;
+
+std::string secondToHMS(float seconds)
 {
-    if (customVocabularyPath.empty())
-    {
-        return std::vector<std::string>{};
-    }
+    const size_t min = (static_cast<size_t>(seconds) % 3600) / 60;
+    const size_t hour = seconds / 3600;
+    const size_t sec = static_cast<size_t>(seconds) % 60;
+    const size_t ms = (seconds - std::floor(seconds)) * 1000;
 
-    std::ifstream customVocabularyFile(customVocabularyPath);
-    if (!customVocabularyFile.is_open())
-    {
-        throw std::logic_error("Failed to open the custom vocabulary file");
-    }
+    const std::string hourStr = std::string(2 - std::to_string(hour).size(), '0') + std::to_string(hour);
+    const std::string minStr = std::string(2 - std::to_string(min).size(), '0') + std::to_string(min);
+    const std::string secStr = std::string(2 - std::to_string(sec).size(), '0') + std::to_string(sec);
+    const std::string msStr = std::string(3 - std::to_string(ms).size(), '0') + std::to_string(ms);
 
-    std::vector<std::string> customVocabulary;
-    std::string line;
-    while (std::getline(customVocabularyFile, line))
-    {
-        customVocabulary.push_back(line);
-    }
+    return hourStr + ":" + minStr + ":" + secStr + "," + msStr;
+}
 
-    customVocabularyFile.close();
+std::string outputDir = ".";
+std::string inputAudioPath = "./aaa.wav";
 
-    return customVocabulary;
+std::string generateOutputFileName(std::string ext, std::string testMetadata = "")
+{
+	std::filesystem::path outPath = outputDir;
+	outPath /= std::filesystem::path(inputAudioPath).stem();
+
+	std::string outFileName = outPath.u8string();
+	outFileName += "asr_10ms";
+	outFileName += (testMetadata.empty() ? "" : "_") + testMetadata;
+	outFileName += ext;
+
+	std::cout << "* Output file: " << outFileName << std::endl;
+
+	return outFileName;
 }
 
 void writeOutputToFile(KrispAudioAsrResult& asrResult, KrispAudioAsrSessionConfig& asrCfg)
 {
-    auto getResult = [&asrResult, this](size_t streamIndex)
+    auto getResult = [&asrResult, &asrCfg]()
     {
         auto& words = asrResult.words;
         auto& speakers = asrResult.speakers;
@@ -185,7 +227,7 @@ void writeOutputToFile(KrispAudioAsrResult& asrResult, KrispAudioAsrSessionConfi
 
                 for (size_t i = start; i <= end; ++i)
                 {
-                    diarText += Utils::getString(words[i].text) + " ";
+                    diarText += convertWstrToStr(words[i].text) + " ";
                 }
 
                 if (!diarText.empty())
@@ -194,7 +236,7 @@ void writeOutputToFile(KrispAudioAsrResult& asrResult, KrispAudioAsrSessionConfi
                 }
 
                 diarText += "\n\n";
-                resultText += Utils::getWString(diarText);
+                resultText += convertStrToWstr(diarText);
 
                 // Collect speaker embeddings text.
                 for (const auto& el : emb)
@@ -221,31 +263,31 @@ void writeOutputToFile(KrispAudioAsrResult& asrResult, KrispAudioAsrSessionConfi
         for (const auto& el : words)
         {
             std::stringstream ss;
-            ss << Utils::getString(el.text) << "\t" << el.start << "\t" << el.end << "\t" << el.confidence << std::endl;
-            resultConfText += Utils::getWString(ss.str());
+            ss << convertWstrToStr(el.text) << "\t" << el.start << "\t" << el.end << "\t" << el.confidence << std::endl;
+            resultConfText += convertStrToWstr(ss.str());
         }
     };
 
     getResult();
 
-    auto saveResults = [this]()
+    auto saveResults = [&asrCfg]()
     {
         const auto& resultText = _resultText;
         const auto& resultTimestampsAndConf = _resultTimestampsAndConf;
         const auto& resultSpeakerEmbeddings = _resultSpeakerEmbeddings;
         const bool diarizationEnabled = asrCfg.enableDiarization;
 
-        std::ofstream textOut(generateOutputFileName(_cmd, (diarizationEnabled ? ".diar" : ".asr")));
-        textOut << Utils::getString(resultText);
+        std::ofstream textOut(generateOutputFileName((diarizationEnabled ? ".diar" : ".asr")));
+        textOut << convertWstrToStr(resultText);
         textOut.close();
 
-        std::ofstream confOut(generateOutputFileName(_cmd, ".tms"));
-        confOut << Utils::getString(resultTimestampsAndConf);
+        std::ofstream confOut(generateOutputFileName(".tms"));
+        confOut << convertWstrToStr(resultTimestampsAndConf);
         confOut.close();
 
         if (diarizationEnabled)
         {
-            std::ofstream speakerEmbeddingsOut(generateOutputFileName(_cmd, ".emb"));
+            std::ofstream speakerEmbeddingsOut(generateOutputFileName(".emb"));
             speakerEmbeddingsOut << resultSpeakerEmbeddings;
             speakerEmbeddingsOut.close();
         }
@@ -281,9 +323,7 @@ int asrWavFileTmpl(const SoundFile &inSndFile, const std::string &weight, KrispA
 	{
 		return error("Failed to initialization Krisp SDK");
 	}
-
-	std::wstring_convert<std::codecvt_utf8<wchar_t>> wstringConverter;
-	std::wstring modelPath = wstringConverter.from_bytes(weight);
+	std::wstring modelPath = convertStrToWstr(weight);
 	std::string modelAlias = "model";
 	if (krispAudioSetModel(modelPath.c_str(), modelAlias.c_str()) != 0)
 	{
@@ -295,11 +335,11 @@ int asrWavFileTmpl(const SoundFile &inSndFile, const std::string &weight, KrispA
 
 	if (typeid(SamplingFormat) == typeid(short))
 	{
-        session = krispAudioAsrCreateSessionInt16(inRate, outRate, asrCfg, modelAlias.c_str());
+        session = krispAudioAsrCreateSessionInt16(inRate, krispFrameDuration, asrCfg, modelAlias.c_str());
     }
 	else if (typeid(SamplingFormat) == typeid(float))
 	{
-        session = krispAudioAsrCreateSessionFloat(inRate, outRate, asrCfg, modelAlias.c_str());
+        session = krispAudioAsrCreateSessionFloat(inRate, krispFrameDuration, asrCfg, modelAlias.c_str());
     }
 	else
 	{
@@ -333,7 +373,7 @@ int asrWavFileTmpl(const SoundFile &inSndFile, const std::string &weight, KrispA
 		return error("Error calling krispAudioAsrGenerateResult");
 	}
 
-	// TODO[GH]: Write ASR result to the file
+	writeOutputToFile(asrResult, asrCfg);
 
 	if (0 != krispAudioAsrCloseSession(session))
 	{

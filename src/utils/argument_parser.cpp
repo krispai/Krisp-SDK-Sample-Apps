@@ -87,8 +87,12 @@ const std::string& ArgumentParser::getArgument(const std::string& k) const {
 const std::string& ArgumentParser::tryGetArgument(const std::string& k,
 		const std::string& def) const {
 	Map::const_iterator r = arguments.find(k);
-	if (arguments.end() != r) 
-		return r->second.value;
+	if (arguments.end() != r) {
+		if (!r->second.value.empty())
+		{
+			return r->second.value;
+		}
+	}
 	return def;
 }
 
