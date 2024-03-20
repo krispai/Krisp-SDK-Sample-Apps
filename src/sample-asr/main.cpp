@@ -14,10 +14,10 @@
 #include "sound_file.hpp"
 
 
-class AppCommandLineParser
+class AppParameters
 {
 public:
-	bool parseCommandLine(int argc, char **argv)
+	bool loadFromCommandLine(int argc, char **argv)
 	{
 		ArgumentParser p(argc, argv);
 		p.addArgument("--input_audio", "-i", IMPORTANT);
@@ -32,55 +32,60 @@ public:
 		p.addArgument("--custom_vocab", "-cv", OPTIONAL);
 		if (p.parse())
 		{
-			m_input = p.getArgument("-i");
-			m_weight = p.getArgument("-m");
-			m_outputDir = p.getArgument("-o");
-
-			m_doPc = p.tryGetArgument("-pc", "0");
-			m_doItn = p.tryGetArgument("-itn", "0");
-			m_doRr = p.tryGetArgument("-rr", "0");
-			m_doPii = p.tryGetArgument("-pii", "0");
-			m_vad = p.tryGetArgument("-vad", "0");
-			m_diarize = p.tryGetArgument("-diar", "0");
-			m_customVocab = p.tryGetArgument("-cv", "");
+			loadCommandLineParams(p);
 		}
 		else
 		{
 			std::cerr << p.getError();
 			return false;
 		}
+		if (std::filesystem::exists(m_asrOutputDirectory))
+		{
+			std::cerr << "The output directory " << m_asrOutputDirectory << " already exists.";
+			return false;
+		}
 		return true;
 	}
 
-	KrispAudioAsrSessionConfig getAsrConfig()
+	const std::string & getInputAudioPath() const
 	{
-		KrispAudioAsrSessionConfig asrCfg;
-		asrCfg.enablePc = std::stoi(m_doPc);
-		asrCfg.enableItn = std::stoi(m_doItn);
-		asrCfg.enableRepetitionRemoval = std::stoi(m_doRr);
-		asrCfg.enablePiiFiltering = std::stoi(m_doPii);
-		asrCfg.enableDiarization = std::stoi(m_diarize);
-		asrCfg.customVocabulary = readCustomVocabulary(m_customVocab);
-		return asrCfg;
+		return m_inputAudioPath;
 	}
-
-	std::string getInputAudioPath() const
+	const std::string & getAsrOutputDirectory() const
 	{
-		return m_input;
+		return m_asrOutputDirectory;
 	}
-
-	std::string getModelPath() const
+	const std::string & getModelPath() const
 	{
-		return m_weight;
+		return m_modelPath;
 	}
-
-	std::string getOutputDirectory() const
+	const KrispAudioAsrSessionConfig & getAsrSessionConfig() const
 	{
-		return m_outputDir;
+		return m_asrSessionConfig;
 	}
 
 private:
-	std::vector<std::string> readCustomVocabulary(const std::string& customVocabularyPath)
+	void loadCommandLineParams(const ArgumentParser & p)
+	{
+		m_inputAudioPath = p.getArgument("-i");
+		m_modelPath = p.getArgument("-m");
+		m_asrOutputDirectory = p.getArgument("-o");
+		std::string doPc = p.tryGetArgument("-pc", "0");
+		std::string doItn = p.tryGetArgument("-itn", "0");
+		std::string doRr = p.tryGetArgument("-rr", "0");
+		std::string doPii = p.tryGetArgument("-pii", "0");
+		std::string vad = p.tryGetArgument("-vad", "0");
+		std::string diarize = p.tryGetArgument("-diar", "0");
+		std::string customVocab = p.tryGetArgument("-cv", "");
+		m_asrSessionConfig.enablePc = std::stoi(doPc);
+		m_asrSessionConfig.enableItn = std::stoi(doItn);
+		m_asrSessionConfig.enableRepetitionRemoval = std::stoi(doRr);
+		m_asrSessionConfig.enablePiiFiltering = std::stoi(doPii);
+		m_asrSessionConfig.enableDiarization = std::stoi(diarize);
+		m_asrSessionConfig.customVocabulary = readCustomVocabulary(customVocab);
+	}
+
+	static std::vector<std::string> readCustomVocabulary(const std::string& customVocabularyPath)
 	{
 		if (customVocabularyPath.empty())
 		{
@@ -105,48 +110,13 @@ private:
 		return customVocabulary;
 	}
 
-	std::string m_input;
-	std::string m_weight;
-	std::string m_outputDir;
 
-	std::string m_doPc;
-	std::string m_doItn;
-	std::string m_doRr;
-	std::string m_doPii;
-	std::string m_vad;
-	std::string m_diarize;
-	std::string m_customVocab;
+	std::string m_inputAudioPath;
+	std::string m_asrOutputDirectory;
+	std::string m_modelPath;
+	KrispAudioAsrSessionConfig m_asrSessionConfig;
+
 };
-
-
-struct AppParameters
-{
-	std::string inputAudioPath;
-	std::string asrOutputDirectory;
-	std::string modelFilePath;
-	KrispAudioAsrSessionConfig asrSessionConfig;
-};
-
-bool getInputFromCommandLine(int argc, char **argv, AppParameters * inputPtr)
-{
-	AppCommandLineParser p;
-	if (!p.parseCommandLine(argc, argv))
-	{
-		std::cerr << "\nUsage:\n\t" << argv[0]
-				<< " -i inputWavAudioPath -m modelPath" << std::endl;
-		return false;
-	}
-	inputPtr->asrSessionConfig = p.getAsrConfig();
-	inputPtr->inputAudioPath = p.getInputAudioPath();
-	inputPtr->modelFilePath = p.getModelPath();
-	inputPtr->asrOutputDirectory = p.getOutputDirectory();
-	if (std::filesystem::exists(inputPtr->asrOutputDirectory))
-	{
-		std::cerr << "The output directory " << inputPtr->asrOutputDirectory << " already exists.";
-		return false;
-	}
-	return true;
-}
 
 static int krispAudioAsrProcess(
 	KrispAudioSessionID pSession,
@@ -229,11 +199,6 @@ void readAllFrames(const SoundFile &sndFile,
 	sndFile.readAllFramesFloat(&frames);
 }
 
-// TODO: fix this
-std::wstring _resultText;
-std::wstring _resultTimestampsAndConf;
-std::string _resultSpeakerEmbeddings;
-
 std::string secondToHMS(float seconds)
 {
     const size_t min = (static_cast<size_t>(seconds) % 3600) / 60;
@@ -252,8 +217,8 @@ std::string secondToHMS(float seconds)
 std::string generateOutputFileName(const AppParameters & appParams,
 	std::string ext, std::string testMetadata = "")
 {
-	std::filesystem::path outPath = appParams.asrOutputDirectory;
-	outPath /= std::filesystem::path(appParams.inputAudioPath).stem();
+	std::filesystem::path outPath = appParams.getAsrOutputDirectory();
+	outPath /= std::filesystem::path(appParams.getInputAudioPath()).stem();
 
 	std::string outFileName = outPath.u8string();
 	outFileName += "asr_10ms";
@@ -265,17 +230,14 @@ std::string generateOutputFileName(const AppParameters & appParams,
 	return outFileName;
 }
 
-void writeOutputToFile(const AppParameters & appParams, const KrispAudioAsrResult & asrResult)
+class AsrResultProcessor
 {
-    auto getResult = [&asrResult, &appParams]()
-    {
+public:
+	void getResulsts(const AppParameters & appParams, const KrispAudioAsrResult & asrResult)
+	{
         auto& words = asrResult.words;
         auto& speakers = asrResult.speakers;
-        auto& resultText = _resultText;
-        auto& resultConfText = _resultTimestampsAndConf;
-        auto& resultSpeakerEmbeddings = _resultSpeakerEmbeddings;
-
-        if (appParams.asrSessionConfig.enableDiarization)
+        if (appParams.getAsrSessionConfig().enableDiarization)
         {
             for (size_t c = 0; c < speakers.size(); ++c)
             {
@@ -284,46 +246,38 @@ void writeOutputToFile(const AppParameters & appParams, const KrispAudioAsrResul
                 const auto start = el.startWordIndex;
                 const auto end = el.endWordIndex;
                 const auto& emb = el.speakerEmbedding;
-
                 std::string diarText = std::to_string(c) + "\n";
                 diarText += secondToHMS(words[start].start) + " --> " + secondToHMS(words[end].end) + "\n";
                 diarText += "[" + sp + "]: ";
-
                 // Speaker embeddings text.
-                resultSpeakerEmbeddings += diarText;
-
+                m_speakerEmbeddings += diarText;
                 for (size_t i = start; i <= end; ++i)
                 {
                     diarText += convertWstrToStr(words[i].text) + " ";
                 }
-
                 if (!diarText.empty())
                 {
                     diarText.pop_back();
                 }
-
                 diarText += "\n\n";
-                resultText += convertStrToWstr(diarText);
-
+                m_text += convertStrToWstr(diarText);
                 // Collect speaker embeddings text.
                 for (const auto& el : emb)
                 {
-                    resultSpeakerEmbeddings += std::to_string(el) + " ";
+                    m_speakerEmbeddings += std::to_string(el) + " ";
                 }
-
-                resultSpeakerEmbeddings += "\n\n";
+                m_speakerEmbeddings += "\n\n";
             }
         }
         else
         {
             for (const auto& el : words)
             {
-                resultText += el.text + L" ";
+                m_text += el.text + L" ";
             }
-
             if (!words.empty())
             {
-                resultText.pop_back();
+                m_text.pop_back();
             }
         }
 
@@ -331,44 +285,44 @@ void writeOutputToFile(const AppParameters & appParams, const KrispAudioAsrResul
         {
             std::stringstream ss;
             ss << convertWstrToStr(el.text) << "\t" << el.start << "\t" << el.end << "\t" << el.confidence << std::endl;
-            resultConfText += convertStrToWstr(ss.str());
+            m_timestampsAndConf += convertStrToWstr(ss.str());
         }
-    };
+	}
 
-    getResult();
-
-    auto saveResults = [&appParams]()
+	void saveResults(const AppParameters & appParams)
     {
-        const auto& resultText = _resultText;
-        const auto& resultTimestampsAndConf = _resultTimestampsAndConf;
-        const auto& resultSpeakerEmbeddings = _resultSpeakerEmbeddings;
-        const bool diarizationEnabled = appParams.asrSessionConfig.enableDiarization;
-
-		if (!std::filesystem::create_directory(appParams.asrOutputDirectory))
+        const bool diarizationEnabled = appParams.getAsrSessionConfig().enableDiarization;
+		if (!std::filesystem::create_directory(appParams.getAsrOutputDirectory()))
 		{
 			assert(0);
 			// TODO: report error
 		}
-
         std::ofstream textOut(generateOutputFileName(appParams, (diarizationEnabled ? ".diar" : ".asr")));
-        textOut << convertWstrToStr(resultText);
+        textOut << convertWstrToStr(m_text);
         textOut.close();
 		// TODO: check for IO error
-
         std::ofstream confOut(generateOutputFileName(appParams, ".tms"));
-        confOut << convertWstrToStr(resultTimestampsAndConf);
+        confOut << convertWstrToStr(m_timestampsAndConf);
         confOut.close();
 		// TODO: check for IO error
-
         if (diarizationEnabled)
         {
             std::ofstream speakerEmbeddingsOut(generateOutputFileName(appParams, ".emb"));
-            speakerEmbeddingsOut << resultSpeakerEmbeddings;
+            speakerEmbeddingsOut << m_speakerEmbeddings;
             speakerEmbeddingsOut.close();
         }
-    };
+    }
+private:
+	std::wstring m_text;
+	std::wstring m_timestampsAndConf;
+	std::string m_speakerEmbeddings;
+};
 
-    saveResults();
+void writeOutputToFile(const AppParameters & appParams, const KrispAudioAsrResult & asrResult)
+{
+	AsrResultProcessor a;
+	a.getResulsts(appParams, asrResult);
+	a.saveResults(appParams);
 }
 
 template <typename SamplingFormat>
@@ -398,7 +352,7 @@ int asrWavFileTmpl(const SoundFile &inSndFile, const AppParameters & appParams)
 	{
 		return error("Failed to initialization Krisp SDK");
 	}
-	std::wstring modelPathW = convertStrToWstr(appParams.modelFilePath);
+	std::wstring modelPathW = convertStrToWstr(appParams.getModelPath());
 	std::string modelAlias = "anyUniqueString";
 	if (krispAudioSetModel(modelPathW.c_str(), modelAlias.c_str()) != 0)
 	{
@@ -411,12 +365,12 @@ int asrWavFileTmpl(const SoundFile &inSndFile, const AppParameters & appParams)
 	if (typeid(SamplingFormat) == typeid(short))
 	{
         session = krispAudioAsrCreateSessionInt16(inRate, krispFrameDuration,
-			appParams.asrSessionConfig, modelAlias.c_str());
+			appParams.getAsrSessionConfig(), modelAlias.c_str());
     }
 	else if (typeid(SamplingFormat) == typeid(float))
 	{
         session = krispAudioAsrCreateSessionFloat(inRate, krispFrameDuration,
-			appParams.asrSessionConfig, modelAlias.c_str());
+			appParams.getAsrSessionConfig(), modelAlias.c_str());
     }
 	else
 	{
@@ -469,7 +423,7 @@ int asrWavFileTmpl(const SoundFile &inSndFile, const AppParameters & appParams)
 int asrWavFile(const AppParameters & appParams)
 {
 	SoundFile inSndFile;
-	inSndFile.loadHeader(appParams.inputAudioPath);
+	inSndFile.loadHeader(appParams.getInputAudioPath());
 	if (inSndFile.getHasError())
 	{
 		return error(inSndFile.getErrorMsg());
@@ -493,7 +447,7 @@ int asrWavFile(const AppParameters & appParams)
 int main(int argc, char **argv)
 {
 	AppParameters appParams;
-	if (!getInputFromCommandLine(argc, argv, &appParams)) {
+	if (!appParams.loadFromCommandLine(argc, argv)) {
 		return 1;
 	}
     return asrWavFile(appParams);
