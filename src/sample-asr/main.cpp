@@ -13,7 +13,6 @@
 #include "argument_parser.hpp"
 #include "sound_file.hpp"
 
-
 class AppParameters
 {
 public:
@@ -47,25 +46,25 @@ public:
 		return true;
 	}
 
-	const std::string & getInputAudioPath() const
+	const std::string &getInputAudioPath() const
 	{
 		return m_inputAudioPath;
 	}
-	const std::string & getAsrOutputDirectory() const
+	const std::string &getAsrOutputDirectory() const
 	{
 		return m_asrOutputDirectory;
 	}
-	const std::string & getModelPath() const
+	const std::string &getModelPath() const
 	{
 		return m_modelPath;
 	}
-	const KrispAudioAsrSessionConfig & getAsrSessionConfig() const
+	const KrispAudioAsrSessionConfig &getAsrSessionConfig() const
 	{
 		return m_asrSessionConfig;
 	}
 
 private:
-	void loadCommandLineParams(const ArgumentParser & p)
+	void loadCommandLineParams(const ArgumentParser &p)
 	{
 		m_inputAudioPath = p.getArgument("-i");
 		m_modelPath = p.getArgument("-m");
@@ -85,7 +84,7 @@ private:
 		m_asrSessionConfig.customVocabulary = readCustomVocabulary(customVocab);
 	}
 
-	static std::vector<std::string> readCustomVocabulary(const std::string& customVocabularyPath)
+	static std::vector<std::string> readCustomVocabulary(const std::string &customVocabularyPath)
 	{
 		if (customVocabularyPath.empty())
 		{
@@ -110,12 +109,10 @@ private:
 		return customVocabulary;
 	}
 
-
 	std::string m_inputAudioPath;
 	std::string m_asrOutputDirectory;
 	std::string m_modelPath;
 	KrispAudioAsrSessionConfig m_asrSessionConfig;
-
 };
 
 static int krispAudioAsrProcess(
@@ -132,18 +129,18 @@ static int krispAudioAsrProcess(
 	return krispAudioAsrProcessFrameFloat(pSession, frame);
 }
 
-inline std::string convertWstrToStr(const std::wstring& wstr)
+inline std::string convertWstrToStr(const std::wstring &wstr)
 {
-    std::wstring_convert<std::codecvt_utf8<wchar_t>> myconv;
-    std::string str = myconv.to_bytes(wstr);
-    return str;
+	std::wstring_convert<std::codecvt_utf8<wchar_t>> myconv;
+	std::string str = myconv.to_bytes(wstr);
+	return str;
 }
 
-inline std::wstring convertStrToWstr(const std::string& str)
+inline std::wstring convertStrToWstr(const std::string &str)
 {
-    std::wstring_convert<std::codecvt_utf8<wchar_t>> myconv;
-    std::wstring wstr = myconv.from_bytes(str);
-    return wstr;
+	std::wstring_convert<std::codecvt_utf8<wchar_t>> myconv;
+	std::wstring wstr = myconv.from_bytes(str);
+	return wstr;
 }
 
 template <typename T>
@@ -201,21 +198,21 @@ void readAllFrames(const SoundFile &sndFile,
 
 std::string secondToHMS(float seconds)
 {
-    const size_t min = (static_cast<size_t>(seconds) % 3600) / 60;
-    const size_t hour = seconds / 3600;
-    const size_t sec = static_cast<size_t>(seconds) % 60;
-    const size_t ms = (seconds - std::floor(seconds)) * 1000;
+	const size_t min = (static_cast<size_t>(seconds) % 3600) / 60;
+	const size_t hour = seconds / 3600;
+	const size_t sec = static_cast<size_t>(seconds) % 60;
+	const size_t ms = (seconds - std::floor(seconds)) * 1000;
 
-    const std::string hourStr = std::string(2 - std::to_string(hour).size(), '0') + std::to_string(hour);
-    const std::string minStr = std::string(2 - std::to_string(min).size(), '0') + std::to_string(min);
-    const std::string secStr = std::string(2 - std::to_string(sec).size(), '0') + std::to_string(sec);
-    const std::string msStr = std::string(3 - std::to_string(ms).size(), '0') + std::to_string(ms);
+	const std::string hourStr = std::string(2 - std::to_string(hour).size(), '0') + std::to_string(hour);
+	const std::string minStr = std::string(2 - std::to_string(min).size(), '0') + std::to_string(min);
+	const std::string secStr = std::string(2 - std::to_string(sec).size(), '0') + std::to_string(sec);
+	const std::string msStr = std::string(3 - std::to_string(ms).size(), '0') + std::to_string(ms);
 
-    return hourStr + ":" + minStr + ":" + secStr + "," + msStr;
+	return hourStr + ":" + minStr + ":" + secStr + "," + msStr;
 }
 
-std::string generateOutputFileName(const AppParameters & appParams,
-	std::string ext, std::string testMetadata = "")
+std::string generateOutputFileName(const AppParameters &appParams,
+								   std::string ext, std::string testMetadata = "")
 {
 	std::filesystem::path outPath = appParams.getAsrOutputDirectory();
 	outPath /= std::filesystem::path(appParams.getInputAudioPath()).stem();
@@ -233,75 +230,75 @@ std::string generateOutputFileName(const AppParameters & appParams,
 class AsrResultProcessor
 {
 public:
-	void getResulsts(const AppParameters & appParams, const KrispAudioAsrResult & asrResult)
+	void getResulsts(const AppParameters &appParams, const KrispAudioAsrResult &asrResult)
 	{
-        auto& words = asrResult.words;
-        auto& speakers = asrResult.speakers;
-        if (appParams.getAsrSessionConfig().enableDiarization)
-        {
-            for (size_t c = 0; c < speakers.size(); ++c)
-            {
-                auto& el = speakers[c];
-                const auto sp = el.speakerId;
-                const auto start = el.startWordIndex;
-                const auto end = el.endWordIndex;
-                const auto& emb = el.speakerEmbedding;
-                std::string diarText = std::to_string(c) + "\n";
-                diarText += secondToHMS(words[start].start) + " --> " + secondToHMS(words[end].end) + "\n";
-                diarText += "[" + sp + "]: ";
-                // Speaker embeddings text.
-                m_speakerEmbeddings += diarText;
-                for (size_t i = start; i <= end; ++i)
-                {
-                    diarText += convertWstrToStr(words[i].text) + " ";
-                }
-                if (!diarText.empty())
-                {
-                    diarText.pop_back();
-                }
-                diarText += "\n\n";
-                m_text += convertStrToWstr(diarText);
-                // Collect speaker embeddings text.
-                for (const auto& el : emb)
-                {
-                    m_speakerEmbeddings += std::to_string(el) + " ";
-                }
-                m_speakerEmbeddings += "\n\n";
-            }
-        }
-        else
-        {
-            for (const auto& el : words)
-            {
-                m_text += el.text + L" ";
-            }
-            if (!words.empty())
-            {
-                m_text.pop_back();
-            }
-        }
+		auto &words = asrResult.words;
+		auto &speakers = asrResult.speakers;
+		if (appParams.getAsrSessionConfig().enableDiarization)
+		{
+			for (size_t c = 0; c < speakers.size(); ++c)
+			{
+				auto &el = speakers[c];
+				const auto sp = el.speakerId;
+				const auto start = el.startWordIndex;
+				const auto end = el.endWordIndex;
+				const auto &emb = el.speakerEmbedding;
+				std::string diarText = std::to_string(c) + "\n";
+				diarText += secondToHMS(words[start].start) + " --> " + secondToHMS(words[end].end) + "\n";
+				diarText += "[" + sp + "]: ";
+				// Speaker embeddings text.
+				m_speakerEmbeddings += diarText;
+				for (size_t i = start; i <= end; ++i)
+				{
+					diarText += convertWstrToStr(words[i].text) + " ";
+				}
+				if (!diarText.empty())
+				{
+					diarText.pop_back();
+				}
+				diarText += "\n\n";
+				m_text += convertStrToWstr(diarText);
+				// Collect speaker embeddings text.
+				for (const auto &el : emb)
+				{
+					m_speakerEmbeddings += std::to_string(el) + " ";
+				}
+				m_speakerEmbeddings += "\n\n";
+			}
+		}
+		else
+		{
+			for (const auto &el : words)
+			{
+				m_text += el.text + L" ";
+			}
+			if (!words.empty())
+			{
+				m_text.pop_back();
+			}
+		}
 
-        for (const auto& el : words)
-        {
-            std::stringstream ss;
-            ss << convertWstrToStr(el.text) << "\t" << el.start << "\t" << el.end << "\t" << el.confidence << std::endl;
-            m_timestampsAndConf += convertStrToWstr(ss.str());
-        }
+		for (const auto &el : words)
+		{
+			std::stringstream ss;
+			ss << convertWstrToStr(el.text) << "\t" << el.start << "\t" << el.end << "\t" << el.confidence << std::endl;
+			m_timestampsAndConf += convertStrToWstr(ss.str());
+		}
 	}
 
-	bool saveTextResult(const AppParameters & appParams)
+	bool saveTextResult(const AppParameters &appParams)
 	{
 		if (!std::filesystem::create_directory(appParams.getAsrOutputDirectory()))
 		{
 			std::cerr << "Failed creating the " << appParams.getAsrOutputDirectory()
-				<< " directory.";
+					  << " directory.";
 			return false;
 		}
-        const bool diarizationEnabled = appParams.getAsrSessionConfig().enableDiarization;
+		const bool diarizationEnabled = appParams.getAsrSessionConfig().enableDiarization;
 		std::string textFileName = generateOutputFileName(appParams, (diarizationEnabled ? ".diar" : ".asr"));
-        std::ofstream textOut(textFileName);
-        textOut << convertWstrToStr(m_text);
-        textOut.close();
+		std::ofstream textOut(textFileName);
+		textOut << convertWstrToStr(m_text);
+		textOut.close();
 		if (textOut.fail())
 		{
 			std::cerr << "Error writing to the " << textFileName;
@@ -310,24 +307,24 @@ public:
 		return true;
 	}
 
-	bool saveConfResults(const AppParameters & appParams)
+	bool saveConfResults(const AppParameters &appParams)
 	{
 		saveTextResult(appParams);
 		std::string confFileName = generateOutputFileName(appParams, ".tms");
-        std::ofstream confOut(confFileName);
-        confOut << convertWstrToStr(m_timestampsAndConf);
-        confOut.close();
+		std::ofstream confOut(confFileName);
+		confOut << convertWstrToStr(m_timestampsAndConf);
+		confOut.close();
 		if (confOut.fail())
 		{
 			std::cerr << "Error writing to the " << confFileName;
 			return false;
 		}
-        if (appParams.getAsrSessionConfig().enableDiarization)
-        {
-            std::ofstream speakerEmbeddingsOut(generateOutputFileName(appParams, ".emb"));
-            speakerEmbeddingsOut << m_speakerEmbeddings;
-            speakerEmbeddingsOut.close();
-        }
+		if (appParams.getAsrSessionConfig().enableDiarization)
+		{
+			std::ofstream speakerEmbeddingsOut(generateOutputFileName(appParams, ".emb"));
+			speakerEmbeddingsOut << m_speakerEmbeddings;
+			speakerEmbeddingsOut.close();
+		}
 		return true;
 	}
 
@@ -337,7 +334,7 @@ private:
 	std::string m_speakerEmbeddings;
 };
 
-bool writeOutputToFile(const AppParameters & appParams, const KrispAudioAsrResult & asrResult)
+bool writeOutputToFile(const AppParameters &appParams, const KrispAudioAsrResult &asrResult)
 {
 	AsrResultProcessor a;
 	a.getResulsts(appParams, asrResult);
@@ -347,7 +344,7 @@ bool writeOutputToFile(const AppParameters & appParams, const KrispAudioAsrResul
 }
 
 template <typename SamplingFormat>
-int asrWavFileTmpl(const SoundFile &inSndFile, const AppParameters & appParams)
+int asrWavFileTmpl(const SoundFile &inSndFile, const AppParameters &appParams)
 {
 	std::vector<SamplingFormat> wavDataIn;
 
@@ -385,18 +382,18 @@ int asrWavFileTmpl(const SoundFile &inSndFile, const AppParameters & appParams)
 
 	if (typeid(SamplingFormat) == typeid(short))
 	{
-        session = krispAudioAsrCreateSessionInt16(inRate, krispFrameDuration,
-			appParams.getAsrSessionConfig(), modelAlias.c_str());
-    }
+		session = krispAudioAsrCreateSessionInt16(inRate, krispFrameDuration,
+												  appParams.getAsrSessionConfig(), modelAlias.c_str());
+	}
 	else if (typeid(SamplingFormat) == typeid(float))
 	{
-        session = krispAudioAsrCreateSessionFloat(inRate, krispFrameDuration,
-			appParams.getAsrSessionConfig(), modelAlias.c_str());
-    }
+		session = krispAudioAsrCreateSessionFloat(inRate, krispFrameDuration,
+												  appParams.getAsrSessionConfig(), modelAlias.c_str());
+	}
 	else
 	{
-        return error("Error invalid template type");
-    }
+		return error("Error invalid template type");
+	}
 
 	if (nullptr == session)
 	{
@@ -437,15 +434,17 @@ int asrWavFileTmpl(const SoundFile &inSndFile, const AppParameters & appParams)
 		return error("Error calling krispAudioGlobalDestroy");
 	}
 
-	if (resultStored) {
+	if (resultStored)
+	{
 		return 0;
 	}
-	else {
+	else
+	{
 		return 1;
 	}
 }
 
-int asrWavFile(const AppParameters & appParams)
+int asrWavFile(const AppParameters &appParams)
 {
 	SoundFile inSndFile;
 	inSndFile.loadHeader(appParams.getInputAudioPath());
@@ -472,8 +471,9 @@ int asrWavFile(const AppParameters & appParams)
 int main(int argc, char **argv)
 {
 	AppParameters appParams;
-	if (!appParams.loadFromCommandLine(argc, argv)) {
+	if (!appParams.loadFromCommandLine(argc, argv))
+	{
 		return 1;
 	}
-    return asrWavFile(appParams);
+	return asrWavFile(appParams);
 }
