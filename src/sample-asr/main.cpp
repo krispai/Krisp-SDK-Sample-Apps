@@ -41,7 +41,7 @@ public:
 		}
 		if (std::filesystem::exists(m_asrOutputDirectory))
 		{
-			std::cerr << "The output directory " << m_asrOutputDirectory << " already exists.";
+			std::cerr << "The output directory '" << m_asrOutputDirectory << "' already exists.";
 			return false;
 		}
 		return true;
@@ -289,40 +289,61 @@ public:
         }
 	}
 
-	void saveResults(const AppParameters & appParams)
-    {
-        const bool diarizationEnabled = appParams.getAsrSessionConfig().enableDiarization;
+	bool saveTextResult(const AppParameters & appParams)
+	{
 		if (!std::filesystem::create_directory(appParams.getAsrOutputDirectory()))
 		{
-			assert(0);
-			// TODO: report error
+			std::cerr << "Failed creating the " << appParams.getAsrOutputDirectory()
+				<< " directory.";
+			return false;
 		}
-        std::ofstream textOut(generateOutputFileName(appParams, (diarizationEnabled ? ".diar" : ".asr")));
+        const bool diarizationEnabled = appParams.getAsrSessionConfig().enableDiarization;
+		std::string textFileName = generateOutputFileName(appParams, (diarizationEnabled ? ".diar" : ".asr"));
+        std::ofstream textOut(textFileName);
         textOut << convertWstrToStr(m_text);
         textOut.close();
-		// TODO: check for IO error
-        std::ofstream confOut(generateOutputFileName(appParams, ".tms"));
+		if (textOut.fail())
+		{
+			std::cerr << "Error writing to the " << textFileName;
+			return false;
+		}
+		return true;
+	}
+
+	bool saveConfResults(const AppParameters & appParams)
+	{
+		saveTextResult(appParams);
+		std::string confFileName = generateOutputFileName(appParams, ".tms");
+        std::ofstream confOut(confFileName);
         confOut << convertWstrToStr(m_timestampsAndConf);
         confOut.close();
-		// TODO: check for IO error
-        if (diarizationEnabled)
+		if (confOut.fail())
+		{
+			std::cerr << "Error writing to the " << confFileName;
+			return false;
+		}
+        if (appParams.getAsrSessionConfig().enableDiarization)
         {
             std::ofstream speakerEmbeddingsOut(generateOutputFileName(appParams, ".emb"));
             speakerEmbeddingsOut << m_speakerEmbeddings;
             speakerEmbeddingsOut.close();
         }
-    }
+		return true;
+	}
+
 private:
 	std::wstring m_text;
 	std::wstring m_timestampsAndConf;
 	std::string m_speakerEmbeddings;
 };
 
-void writeOutputToFile(const AppParameters & appParams, const KrispAudioAsrResult & asrResult)
+bool writeOutputToFile(const AppParameters & appParams, const KrispAudioAsrResult & asrResult)
 {
 	AsrResultProcessor a;
 	a.getResulsts(appParams, asrResult);
-	a.saveResults(appParams);
+	bool textResultReady = a.saveTextResult(appParams);
+	bool confResultReady = a.saveConfResults(appParams);
+	return (textResultReady && confResultReady);
 }
 
 template <typename SamplingFormat>
@@ -398,14 +419,13 @@ int asrWavFileTmpl(const SoundFile &inSndFile, const AppParameters & appParams)
 		}
 	}
 
-	// Audio stream ended, generate transcript.
 	KrispAudioAsrResult asrResult;
 	if (0 != krispAudioAsrGenerateResult(session, asrResult))
 	{
 		return error("Error calling krispAudioAsrGenerateResult");
 	}
 
-	writeOutputToFile(appParams, asrResult);
+	bool resultStored = writeOutputToFile(appParams, asrResult);
 
 	if (0 != krispAudioAsrCloseSession(session))
 	{
@@ -417,7 +437,12 @@ int asrWavFileTmpl(const SoundFile &inSndFile, const AppParameters & appParams)
 		return error("Error calling krispAudioGlobalDestroy");
 	}
 
-	return 0;
+	if (resultStored) {
+		return 0;
+	}
+	else {
+		return 1;
+	}
 }
 
 int asrWavFile(const AppParameters & appParams)
