@@ -27,8 +27,8 @@ include(krisp.cmake)
 
 set(APPNAME_NC sample-nc)
 set(APPNAME_ASR sample-asr)
-#set(DLLNAME krisp-dll)
-#set(APPNAME_DLL dll-test-app)
+set(DLLNAME krisp-dll)
+set(APPNAME_DLL dll-test-app)
 #set(APPNAME_VAD sample-vad)
 
 add_compile_definitions(KRISP_AUDIO_STATIC)
@@ -36,15 +36,15 @@ if (WIN32 AND MSVC)
 	add_compile_definitions(_ITERATOR_DEBUG_LEVEL=0)
 endif()
 
-#add_library(
-#	${DLLNAME} SHARED
-#	${ROOT_DIR}/src/sample-dll/dll-main.cpp
-#)
+add_library(
+	${DLLNAME} SHARED
+	${ROOT_DIR}/src/sample-dll/dll-main.cpp
+)
 
-#add_executable(
-#	${APPNAME_DLL}
-#	${ROOT_DIR}/src/sample-dll/dll-test.cpp
-#)
+add_executable(
+	${APPNAME_DLL}
+	${ROOT_DIR}/src/sample-dll/dll-test.cpp
+)
 
 add_executable(
 	${APPNAME_NC} 
@@ -76,42 +76,39 @@ target_include_directories(
 	$ENV{KRISP_INC}
 )
 
-#target_include_directories(
-#	${DLLNAME}
-#	PRIVATE
-#	$ENV{KRISP_INC}
-#)
+target_include_directories(
+	${DLLNAME}
+	PRIVATE
+	$ENV{KRISP_INC}
+)
 
-#target_include_directories(
-#	${APPNAME_DLL}
-#	PRIVATE
-#	$ENV{KRISP_INC}
-#)
+target_include_directories(
+	${APPNAME_DLL}
+	PRIVATE
+	$ENV{KRISP_INC}
+)
 
 target_link_libraries(
 	${APPNAME_NC}
 	${LIBSNDFILE_ABSPATH}
-	${LIBKRISP_ABSPATH}
 	${KRISP_LIBS}
 )
 
 target_link_libraries(
 	${APPNAME_ASR}
 	${LIBSNDFILE_ABSPATH}
-	${LIBKRISP_ABSPATH}
 	${KRISP_LIBS}
 )
 
-#target_link_libraries(
-#	${DLLNAME}
-#	${LIBKRISP_ABSPATH}
-#	${LIBRESAMPLE_ABSPATH}
-#)
+target_link_libraries(
+	${DLLNAME}
+	${KRISP_LIBS}
+)
 
-#target_link_libraries(
-#	${APPNAME_DLL}
-#	${DLLNAME}
-#)
+target_link_libraries(
+	${APPNAME_DLL}
+	${DLLNAME}
+)
 
 # Blas libraries are applied to ${APPNAME_NC} target
 include(blas.cmake)
