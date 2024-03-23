@@ -15,22 +15,18 @@ The build system and the codebase is compatible with.
 The reference samples require
 * **libsndfile** library to read and write WAV files
 * Krisp archive libraries for the noise canceling
-* Intel MKL libraries installed only on the x86/amd64 based system - bundled with Krisp Audio SDK starting from v7.0
-* Libresample - bundled with Krisp Audio SDK starting from v7.0
-
-The Accelerator library is used instead of Intel MKL on Apple ARM-based platforms which is available in the OS out of the box.
+* THIRDPARTY_LIB - all third party dependencies bundled with Krisp Audio SDK
 
 The following environment variables are mandatory. The name of each parameter is self-explanatory.
 * LIBSNDFILE_INC
 * LIBSNDFILE_LIB
 * KRISP_INC
 * KRISP_LIB
-
-The MKL_LIB parameter is mandatory on the x86/amd64-based system. The parameter should point to the MKL libraries folder which is packaged with Krisp Audio SDK for x86/amd64-based systems starting from v7.0.
+* THIRDPARTY_LIB
 
 KRISP_INC and KRISP_LIB should point to the Krisp SDK header directory and library directory.
 
-The LIBRESAMPLE_LIB parameter is mandatory and required by Krisp Audio SDK. The parameter should point to the folder containing libresample library which is bundled with Krisp Audio SDK starting from v7.0.
+The THIRDPARTY_LIB parameter is mandatory and required by Krisp Audio SDK. The parameter should point to the folder with all third party libraries which is bundled with the Krisp Audio SDK starting from v8.0.
 
 LIBSNDFILE_INC and LIBSNDFILE_LIB directories is required by the sample-nc app for the purpose of reading and writing WAV PCM-based audio files. It is not the SDK requirement.
 
@@ -74,3 +70,6 @@ The sample demonstrates how to build dynamic link library using Krisp static lib
 
 #### Where it should be useful
 Dynamic link libraries for Linux are always bound to specific GLIBC version. It means that you will not be able to use them on older Linux systems. This samples can be used to build DLL libraries for old Linux systems using Krisp static libraries.
+
+## sample-asr
+TODO: lets add content

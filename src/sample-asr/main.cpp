@@ -309,7 +309,6 @@ public:
 
 	bool saveConfResults(const AppParameters &appParams)
 	{
-		saveTextResult(appParams);
 		std::string confFileName = generateOutputFileName(appParams, ".tms");
 		std::ofstream confOut(confFileName);
 		confOut << convertWstrToStr(m_timestampsAndConf);
