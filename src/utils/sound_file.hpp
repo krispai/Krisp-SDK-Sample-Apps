@@ -19,18 +19,18 @@ class SoundFileHeader {
 private:
 	SF_INFO m_info;
 public:
-	SoundFileHeader(): m_info{0} {
+	SoundFileHeader(): m_info{} {
 	}
 	explicit SoundFileHeader(const SF_INFO & sfInfo): m_info{sfInfo} {
 	}
 	unsigned getNumberOfChannels() const {
-		return m_info.channels;
+		return static_cast<unsigned>(m_info.channels);
 	}
 	int64_t getNumberOfFrames() const {
 		return m_info.frames;
 	}
 	unsigned getSamplingRate() const {
-		return m_info.samplerate;
+		return static_cast<unsigned>(m_info.samplerate);
 	}
 	SoundFileFormat getFormat() const;
 };
@@ -40,7 +40,6 @@ class SoundFile {
 private:
 	SNDFILE* m_sfHandle;
 	SoundFileHeader m_sfHeader;
-
 	mutable bool m_hasError;
 	mutable std::string m_errorMsg;
 

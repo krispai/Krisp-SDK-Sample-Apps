@@ -16,6 +16,25 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${ROOT_DIR}/bin)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+if(UNIX OR APPLE)
+    add_compile_options(-Wall -Werror -pedantic)
+
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+        add_compile_options(-Wextra -Wconversion -Wsign-conversion)
+    endif()
+
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        add_compile_options(
+			-Weverything
+			-Wno-c++98-compat-pedantic
+			-Wno-documentation-pedantic
+			-Wdeprecated-declarations
+			-Wno-deprecated-declarations
+			-Wno-padded
+		)
+    endif()
+endif()
+
 # is needed to get ${LIBSNDFILE_ABSPATH} and ${LIBSNDFILE_INC}
 include(libsndfile.cmake)
 

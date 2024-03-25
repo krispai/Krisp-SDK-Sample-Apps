@@ -40,16 +40,16 @@ private:
 	typedef std::pair<Map::iterator, bool> Ret; 
 	Map arguments;
 	OtherType others;
-	bool ignore_others;
-	char** argv;
-	int argc;
 	std::string error;
 	std::string empty_;
+	char** argv;
+	int argc;
+	bool ignore_others;
 public:
 	void addArgument(const std::string& l, const std::string& s,
 		const ArgType t=DEFAULT);
-	const bool parse();
-	const bool getOptionalArgument(const std::string& k) const;
+	bool parse();
+	bool getOptionalArgument(const std::string& k) const;
 	const std::string& getArgument(const std::string& k) const;
 	const std::string& tryGetArgument(const std::string& k,
 		const std::string& d) const;

@@ -47,7 +47,7 @@ void SoundFile::loadHeader(const std::string & filePath) {
 			setError("Failed to close the sound file handle.");
 		}
 	}
-	SF_INFO sfInfo{0};
+	SF_INFO sfInfo{};
 	sfInfo.format = 0;
 
 	m_sfHandle = sf_open(filePath.c_str(), SFM_READ, &sfInfo);
@@ -84,7 +84,7 @@ static int64_t sf_read(SNDFILE *sfHandle, float *frames, int64_t nFrames) {
 template <class T>
 inline void SoundFile::readAllFramesTmpl(std::vector<T> * frames) const {
 	int64_t nFrames = m_sfHeader.getNumberOfFrames();
-	frames->resize(nFrames);
+	frames->resize(static_cast<size_t>(nFrames));
 
 	int64_t nFramesRead = sf_read(m_sfHandle, frames->data(), nFrames);
 
@@ -112,7 +112,7 @@ std::pair<bool, std::string> writeFramesTmpl(
 	}
 	SF_INFO sfinfo;
 	sfinfo.frames = static_cast<sf_count_t>(frames.size());
-	sfinfo.samplerate = samplingRate;
+	sfinfo.samplerate = static_cast<int>(samplingRate);
 	sfinfo.channels = 1;
 	sfinfo.format = sfInfoFormat;
 	SNDFILE *sfHandle = sf_open(fileName.c_str(), SFM_WRITE, &sfinfo);
@@ -121,7 +121,7 @@ std::pair<bool, std::string> writeFramesTmpl(
 			"Error open file for writing: " + fileName); 
 	}
 	sf_write(sfHandle, const_cast<SamplingFormat *>(frames.data()),
-		frames.size());
+		static_cast<int64_t>(frames.size()));
 	sf_write_sync(sfHandle);
 	sf_close(sfHandle);
 	return std::pair<bool, std::string>(true, "");

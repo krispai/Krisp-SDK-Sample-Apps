@@ -16,6 +16,7 @@
 class AppParameters
 {
 public:
+
 	bool loadFromCommandLine(int argc, char **argv)
 	{
 		ArgumentParser p(argc, argv);
@@ -35,7 +36,8 @@ public:
 		}
 		else
 		{
-			std::cerr << p.getError();
+			std::cerr << p.getError() << std::endl;
+			std::cerr << getUsage(argv[0]) << std::endl;
 			return false;
 		}
 		if (std::filesystem::exists(m_asrOutputDirectory))
@@ -64,6 +66,14 @@ public:
 	}
 
 private:
+	std::string getUsage(const char * appName) const
+	{
+		std::stringstream ss;
+		ss << "\nUsage:\n\t" << appName
+			<< " -i input.wav -o output_dir -m asr_model_path" << std::endl;
+		return ss.str();
+	}
+
 	void loadCommandLineParams(const ArgumentParser &p)
 	{
 		m_inputAudioPath = p.getArgument("-i");
@@ -150,7 +160,7 @@ int error(const T &e)
 	return 1;
 }
 
-std::pair<KrispAudioSamplingRate, bool> getKrispSamplingRate(unsigned rate)
+static std::pair<KrispAudioSamplingRate, bool> getKrispSamplingRate(unsigned rate)
 {
 	std::pair<KrispAudioSamplingRate, bool> result;
 	result.second = true;
@@ -184,24 +194,24 @@ std::pair<KrispAudioSamplingRate, bool> getKrispSamplingRate(unsigned rate)
 	return result;
 }
 
-void readAllFrames(const SoundFile &sndFile,
+static void readAllFrames(const SoundFile &sndFile,
 				   std::vector<short> &frames)
 {
 	sndFile.readAllFramesPCM16(&frames);
 }
 
-void readAllFrames(const SoundFile &sndFile,
+static void readAllFrames(const SoundFile &sndFile,
 				   std::vector<float> &frames)
 {
 	sndFile.readAllFramesFloat(&frames);
 }
 
-std::string secondToHMS(float seconds)
+static std::string secondToHMS(float seconds)
 {
 	const size_t min = (static_cast<size_t>(seconds) % 3600) / 60;
-	const size_t hour = seconds / 3600;
+	const size_t hour = static_cast<size_t>(seconds) / 3600;
 	const size_t sec = static_cast<size_t>(seconds) % 60;
-	const size_t ms = (seconds - std::floor(seconds)) * 1000;
+	const size_t ms = static_cast<size_t>((seconds - std::floor(seconds)) * 1000);
 
 	const std::string hourStr = std::string(2 - std::to_string(hour).size(), '0') + std::to_string(hour);
 	const std::string minStr = std::string(2 - std::to_string(min).size(), '0') + std::to_string(min);
@@ -211,7 +221,7 @@ std::string secondToHMS(float seconds)
 	return hourStr + ":" + minStr + ":" + secStr + "," + msStr;
 }
 
-std::string generateOutputFileName(const AppParameters &appParams,
+static std::string generateOutputFileName(const AppParameters &appParams,
 								   std::string ext, std::string testMetadata = "")
 {
 	std::filesystem::path outPath = appParams.getAsrOutputDirectory();
@@ -259,9 +269,9 @@ public:
 				diarText += "\n\n";
 				m_text += convertStrToWstr(diarText);
 				// Collect speaker embeddings text.
-				for (const auto &el : emb)
+				for (const auto &element : emb)
 				{
-					m_speakerEmbeddings += std::to_string(el) + " ";
+					m_speakerEmbeddings += std::to_string(element) + " ";
 				}
 				m_speakerEmbeddings += "\n\n";
 			}
@@ -333,7 +343,7 @@ private:
 	std::string m_speakerEmbeddings;
 };
 
-bool writeOutputToFile(const AppParameters &appParams, const KrispAudioAsrResult &asrResult)
+static bool writeOutputToFile(const AppParameters &appParams, const KrispAudioAsrResult &asrResult)
 {
 	AsrResultProcessor a;
 	a.getResulsts(appParams, asrResult);
@@ -399,12 +409,11 @@ int asrWavFileTmpl(const SoundFile &inSndFile, const AppParameters &appParams)
 		return error("Error creating ASR session");
 	}
 
-	size_t i;
-
+	size_t i = 0;
 	auto frameIterator = wavDataIn.begin();
-	while (std::distance(frameIterator, wavDataIn.end()) >= inputFrameSize)
+	while (std::distance(frameIterator, wavDataIn.end()) >= static_cast<long>(inputFrameSize))
 	{
-		std::vector<SamplingFormat> frame(frameIterator, frameIterator + inputFrameSize);
+		std::vector<SamplingFormat> frame(frameIterator, frameIterator + static_cast<long>(inputFrameSize));
 		std::advance(frameIterator, inputFrameSize);
 
 		auto result = krispAudioAsrProcess(session, frame);
@@ -413,6 +422,7 @@ int asrWavFileTmpl(const SoundFile &inSndFile, const AppParameters &appParams)
 			std::cerr << "Error while processing ASR" << i << " frame" << std::endl;
 			break;
 		}
+		++i;
 	}
 
 	KrispAudioAsrResult asrResult;
@@ -443,7 +453,7 @@ int asrWavFileTmpl(const SoundFile &inSndFile, const AppParameters &appParams)
 	}
 }
 
-int asrWavFile(const AppParameters &appParams)
+static int asrWavFile(const AppParameters &appParams)
 {
 	SoundFile inSndFile;
 	inSndFile.loadHeader(appParams.getInputAudioPath());

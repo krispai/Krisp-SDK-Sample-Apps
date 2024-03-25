@@ -7,12 +7,12 @@
 ArgumentParser::ArgumentParser() {
 }
 
-ArgumentParser::ArgumentParser(int argc, char** argv, bool o) {
-	this->argc = argc;
-	this->argv = argv;
+ArgumentParser::ArgumentParser(int _argc, char** _argv, bool o) {
+	this->argc = _argc;
+	this->argv = _argv;
 	ignore_others = o;
-	assert(0 < argc);
-	assert(0 != argv);
+	assert(0 < _argc);
+	assert(nullptr != _argv);
 }
 
 ArgumentParser::~ArgumentParser() {
@@ -30,7 +30,7 @@ void ArgumentParser::addArgument(const std::string& l, const std::string& s,
 	}
 }
 
-const bool ArgumentParser::parse() {
+bool ArgumentParser::parse() {
 	assert(argc > 0);
 	Map::iterator r = arguments.end();
 	for (int i = 1; i < argc; ++i) {
@@ -68,7 +68,7 @@ const bool ArgumentParser::parse() {
 	return true;
 }
 
-const bool ArgumentParser::getOptionalArgument(const std::string& k) const {
+bool ArgumentParser::getOptionalArgument(const std::string& k) const {
 	Map::const_iterator r = arguments.find(k);
 	if (arguments.end() != r) {
 		return r->second.opt;
