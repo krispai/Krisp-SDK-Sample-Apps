@@ -1,6 +1,6 @@
 find_library(LIBKRISP_ABSPATH NAMES krisp-audio-sdk-static PATHS ${KRISP_LIB_DIR})
 if (NOT LIBKRISP_ABSPATH) 
-	message(FATAL_ERROR "Can't find krisp-audio-sdk")
+	message(FATAL_ERROR "Can't find krisp-audio-sdk in the ${KRISP_LIB_DIR}")
 endif()
 
 if (${CMAKE_SYSTEM_PROCESSOR} MATCHES ".*(arm|ARM).*")
