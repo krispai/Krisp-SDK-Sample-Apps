@@ -73,7 +73,7 @@ static bool parseArguments(std::string& input, std::string& output,
 	if (p.parse()) {
 		input = p.getArgument("-i");
 		output = p.getArgument("-o");
-		weight = p.getArgument("-w");
+		weight = p.getArgument("-m");
 		stats = p.getOptionalArgument("-s");
 	} else {
 		std::cerr << p.getError();
