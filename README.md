@@ -53,7 +53,7 @@ The noise cancelling app that applies Krisp NC technology on the given PCM16 wav
 * how to to get the Call Stats for the whole processed file and for the each frame, the feature is enabled with '-s' option
 
 ### Usage
-```sample-nc -i <PCM16 wav file> -o <output WAV file path> -m <path to the AI model> -s```
+```sample-nc -i <PCM16 or FLOAT32 wav file> -o <output WAV file path> -m <path to the AI model> -s```
 
 ### Test input for the sample-nc app
 [test/input/sample-nc-test.wav](test/input/sample-nc-test.wav)
