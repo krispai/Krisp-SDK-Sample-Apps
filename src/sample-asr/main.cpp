@@ -42,7 +42,8 @@ public:
 		}
 		if (std::filesystem::exists(m_asrOutputDirectory))
 		{
-			std::cerr << "The output directory '" << m_asrOutputDirectory << "' already exists.";
+			std::cerr << "The output directory '" << m_asrOutputDirectory
+				<< "' already exists." << std::endl;
 			return false;
 		}
 		return true;

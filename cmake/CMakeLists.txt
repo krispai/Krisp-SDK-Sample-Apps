@@ -35,6 +35,14 @@ if(UNIX OR APPLE)
     endif()
 endif()
 
+if (NOT DEFINED KRISP_SDK_PATH)
+	message(FATAL_ERROR "KRISP_SDK_PATH must be specified")
+endif()
+
+set(KRISP_INC_DIR ${KRISP_SDK_PATH}/include)                                            
+set(KRISP_LIB_DIR ${KRISP_SDK_PATH}/lib)
+set(KRISP_3PARTY_LIB_DIR ${KRISP_SDK_PATH}/external)
+
 # is needed to get ${LIBSNDFILE_ABSPATH} and ${LIBSNDFILE_INC}
 include(libsndfile.cmake)
 
@@ -84,7 +92,7 @@ target_include_directories(
 	PRIVATE
 	${ROOT_DIR}/src/utils
 	${LIBSNDFILE_INC}
-	$ENV{KRISP_INC}
+	${KRISP_INC_DIR}
 )
 
 target_include_directories(
@@ -92,19 +100,19 @@ target_include_directories(
 	PRIVATE
 	${ROOT_DIR}/src/utils
 	${LIBSNDFILE_INC}
-	$ENV{KRISP_INC}
+	${KRISP_INC_DIR}
 )
 
 target_include_directories(
 	${DLLNAME}
 	PRIVATE
-	$ENV{KRISP_INC}
+	${KRISP_INC_DIR}
 )
 
 target_include_directories(
 	${APPNAME_DLL}
 	PRIVATE
-	$ENV{KRISP_INC}
+	${KRISP_INC_DIR}
 )
 
 target_link_libraries(
@@ -130,4 +138,4 @@ target_link_libraries(
 )
 
 # Blas libraries are applied to ${APPNAME_NC} target
-include(blas.cmake)
+#include(blas.cmake)

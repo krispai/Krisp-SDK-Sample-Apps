@@ -68,7 +68,7 @@ static bool parseArguments(std::string& input, std::string& output,
 	ArgumentParser p(argc, argv);
 	p.addArgument("--input", "-i", IMPORTANT);
 	p.addArgument("--output", "-o",IMPORTANT);
-	p.addArgument("--weight_file", "-w", IMPORTANT);
+	p.addArgument("--model_path", "-m", IMPORTANT);
 	p.addArgument("--stats", "-s", OPTIONAL);
 	if (p.parse()) {
 		input = p.getArgument("-i");
@@ -368,7 +368,7 @@ int main(int argc, char** argv) {
 		return ncWavFile(in, out, weight, stats);
 	} else {
 		std::cerr << "\nUsage:\n\t" << argv[0]
-			<< " -i input.wav -o output.wav -w weightFile" << std::endl;
+			<< " -i input.wav -o output.wav -m model_path" << std::endl;
 		if (argc == 1) {
 			return 0;
 		}
