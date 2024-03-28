@@ -53,7 +53,7 @@ The noise cancelling app that applies Krisp NC technology on the given PCM16 wav
 * how to to get the Call Stats for the whole processed file and for the each frame, the feature is enabled with '-s' option
 
 ### Usage
-```sample-nc -i <PCM16 wav file> -o <output WAV file path> -m <path to the AI model> -s```
+```sample-nc -i <PCM16 or FLOAT32 wav file> -o <output WAV file path> -m <path to the AI model> -s```
 
 ### Test input for the sample-nc app
 [test/input/sample-nc-test.wav](test/input/sample-nc-test.wav)
@@ -67,6 +67,7 @@ The sample demonstrates how to build dynamic link library using Krisp static lib
 Dynamic link libraries for Linux are always bound to specific GLIBC version. It means that you will not be able to use them on older Linux systems. This samples can be used to build DLL libraries for old Linux systems using Krisp static libraries.
 
 ## sample-asr
+Sample app that demonstrates how to link to the Krisp SDK version 8 static libraries and use the Krisp ASR API to process PCM16 or FLOAT32 wav file to text.
 
 ### Usage
 ```sample-asr -i <PCM16 or FLOAT32 wav file> -o <output directory> -m <path to the ASR AI model>```

@@ -136,6 +136,3 @@ target_link_libraries(
 	${APPNAME_DLL}
 	${DLLNAME}
 )
-
-# Blas libraries are applied to ${APPNAME_NC} target
-#include(blas.cmake)
