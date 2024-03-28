@@ -14,19 +14,14 @@ The build system and the codebase is compatible with.
 ## Build Dependencies
 The reference samples require
 * **libsndfile** library to read and write WAV files
-* Krisp archive libraries for the noise canceling
-* THIRDPARTY_LIB - all third party dependencies bundled with Krisp Audio SDK
+* Krisp SDK package with archive libraries for the noise canceling
 
 The following environment variables are mandatory. The name of each parameter is self-explanatory.
+* KRISP_SDK_PATH
 * LIBSNDFILE_INC
 * LIBSNDFILE_LIB
-* KRISP_INC
-* KRISP_LIB
-* THIRDPARTY_LIB
 
-KRISP_INC and KRISP_LIB should point to the Krisp SDK header directory and library directory.
-
-The THIRDPARTY_LIB parameter is mandatory and required by Krisp Audio SDK. The parameter should point to the folder with all third party libraries which is bundled with the Krisp Audio SDK starting from v8.0.
+KRISP_SDK_PATH should point to the Krisp SDK package directory.
 
 LIBSNDFILE_INC and LIBSNDFILE_LIB directories is required by the sample-nc app for the purpose of reading and writing WAV PCM-based audio files. It is not the SDK requirement.
 
