@@ -5,6 +5,8 @@
 #include <krisp-audio-sdk-nc-stats.hpp>
 
 
+int dllFunction();
+
 int dllFunction() {
 	std::cout << "Hello World" << std::endl;
 	krispAudioGlobalInit(nullptr);
