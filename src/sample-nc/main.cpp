@@ -64,7 +64,7 @@ int error(const T& e) {
 	return 1;
 }
 
-bool parseArguments(std::string& input, std::string& output,
+static bool parseArguments(std::string& input, std::string& output,
 		std::string& weight, bool &stats, int argc, char** argv) {
 	ArgumentParser p(argc, argv);
 	p.addArgument("--input", "-i", IMPORTANT);
@@ -83,7 +83,7 @@ bool parseArguments(std::string& input, std::string& output,
 	return true;
 }
 
-std::pair<KrispAudioSamplingRate, bool> getKrispSamplingRate(unsigned rate) {
+static std::pair<KrispAudioSamplingRate, bool> getKrispSamplingRate(unsigned rate) {
 	std::pair<KrispAudioSamplingRate, bool> result;
 	result.second = true;
 	switch (rate) {
@@ -115,17 +115,17 @@ std::pair<KrispAudioSamplingRate, bool> getKrispSamplingRate(unsigned rate) {
 	return result;
 }
 
-void readAllFrames(const SoundFile & sndFile,
+static void readAllFrames(const SoundFile & sndFile,
 		std::vector<short> & frames) {
 	sndFile.readAllFramesPCM16(&frames);
 }
 
-void readAllFrames(const SoundFile & sndFile,
+static void readAllFrames(const SoundFile & sndFile,
 		std::vector<float> & frames) {
 	sndFile.readAllFramesFloat(&frames);
 }
 
-std::pair<bool, std::string> WriteFramesToFile(
+static std::pair<bool, std::string> WriteFramesToFile(
 	const std::string & fileName, 
 	const std::vector<int16_t> & frames,
 	unsigned samplingRate)
@@ -133,7 +133,7 @@ std::pair<bool, std::string> WriteFramesToFile(
 	return writeSoundFilePCM16(fileName, frames, samplingRate);
 }
 
-std::pair<bool, std::string> WriteFramesToFile(
+static std::pair<bool, std::string> WriteFramesToFile(
 	const std::string & fileName, 
 	const std::vector<float> & frames,
 	unsigned samplingRate)
@@ -141,7 +141,7 @@ std::pair<bool, std::string> WriteFramesToFile(
 	return writeSoundFileFloat(fileName, frames, samplingRate);
 }
 
-void getNcStats(KrispAudioSessionID session, KrispAudioNcStats* ncStats)
+static void getNcStats(KrispAudioSessionID session, KrispAudioNcStats* ncStats)
 {
 	int result = krispAudioNcWithStatsRetrieveStats(session, ncStats);
 	if (0 != result) {
@@ -289,7 +289,7 @@ int ncWavFileTmpl(
 	return 0;
 }
 
-int ncWavFile(const std::string& input, const std::string& output,
+static int ncWavFile(const std::string& input, const std::string& output,
 		const std::string& weight, bool withStats) {
 	SoundFile inSndFile;
 	inSndFile.loadHeader(input);
