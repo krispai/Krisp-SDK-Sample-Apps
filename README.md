@@ -14,7 +14,7 @@ The build system and the codebase is compatible with.
 ## Build Dependencies
 The reference samples require
 * **libsndfile** library to read and write WAV files
-* Krisp SDK package with archive libraries for the noise canceling
+* Krisp SDK package with archive libraries for the noise canceling and speech to text.
 
 The following environment variables are mandatory. The name of each parameter is self-explanatory.
 * KRISP_SDK_PATH
