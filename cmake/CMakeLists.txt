@@ -55,7 +55,9 @@ include(krisp.cmake)
 set(APPNAME_NC sample-nc)
 set(APPNAME_ASR sample-asr)
 set(DLLNAME krisp-dll)
-set(APPNAME_DLL dll-test-app)
+if (NOT WIN32)
+	set(APPNAME_DLL dll-test-app)
+endif()
 #set(APPNAME_VAD sample-vad)
 
 add_compile_definitions(KRISP_AUDIO_STATIC)
@@ -68,10 +70,12 @@ add_library(
 	${ROOT_DIR}/src/sample-dll/dll-main.cpp
 )
 
-add_executable(
-	${APPNAME_DLL}
-	${ROOT_DIR}/src/sample-dll/dll-test.cpp
-)
+if (NOT WIN32)
+	add_executable(
+		${APPNAME_DLL}
+		${ROOT_DIR}/src/sample-dll/dll-test.cpp
+	)
+endif()
 
 add_executable(
 	${APPNAME_NC} 
@@ -109,11 +113,13 @@ target_include_directories(
 	${KRISP_INC_DIR}
 )
 
-target_include_directories(
-	${APPNAME_DLL}
-	PRIVATE
-	${KRISP_INC_DIR}
-)
+if (NOT WIN32)
+	target_include_directories(
+		${APPNAME_DLL}
+		PRIVATE
+		${KRISP_INC_DIR}
+	)
+endif()
 
 target_link_libraries(
 	${APPNAME_NC}
@@ -132,7 +138,9 @@ target_link_libraries(
 	${KRISP_LIBS}
 )
 
-target_link_libraries(
-	${APPNAME_DLL}
-	${DLLNAME}
-)
+if (NOT WIN32)
+	target_link_libraries(
+		${APPNAME_DLL}
+		${DLLNAME}
+	)
+endif()
