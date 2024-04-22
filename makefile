@@ -3,6 +3,9 @@ build:
 	if [ -d "./build" ]; then \
 		rm -rf build; \
 	fi
+	if [ -d "./bin" ]; then \
+		rm -rf bin; \
+	fi
 	mkdir build
 	cmake -B build -S cmake \
 		-D KRISP_SDK_PATH=${KRISP_SDK_PATH} \
