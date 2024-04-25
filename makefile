@@ -1,5 +1,5 @@
 .PHONY: build
-build:
+build: clean
 	mkdir build
 	cmake -B build -S cmake \
 		-D KRISP_SDK_PATH=${KRISP_SDK_PATH} \
@@ -18,5 +18,9 @@ run:
 
 .PHONY: clean
 clean:
-	rm -rf build
-	rm -rf bin
+	if [ -d "./build" ]; then \
+		rm -rf build; \
+	fi
+	if [ -d "./bin" ]; then \
+		rm -rf bin; \
+	fi

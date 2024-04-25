@@ -7,6 +7,7 @@
 #include <locale>
 #include <codecvt>
 #include <typeinfo>
+#include <cmath>
 
 #include <krisp-audio-sdk-asr.hpp>
 
