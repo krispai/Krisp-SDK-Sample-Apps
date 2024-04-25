@@ -49,9 +49,6 @@ include(libsndfile.cmake)
 # Krisp SDK libraries are applied to all targets
 include(krisp.cmake)
 
-# Libresample is required for Krisp SDK
-#include(libresample.cmake)
-
 set(APPNAME_NC sample-nc)
 set(APPNAME_ASR sample-asr)
 set(DLLNAME krisp-dll)

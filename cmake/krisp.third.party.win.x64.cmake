@@ -62,8 +62,25 @@ if (NOT LIBPYNINI_USEFUL)
 	message(FATAL_ERROR "Can't find pynini-useful static library")
 endif()
 
-include(mkl.cmake)
-# this will output MKL_LIB_LIST
+set(LPREFIX ${CMAKE_STATIC_LIBRARY_PREFIX})
+set(LSUFFIX ${CMAKE_STATIC_LIBRARY_SUFFIX})
+
+find_library(mkl_seq NAME ${LPREFIX}mkl_sequential${LSUFFIX} PATHS ${KRISP_3PARTY_LIB_DIR})
+if (NOT mkl_seq)
+	message(FATAL_ERROR ${LPREFIX}mkl_sequential${LSUFFIX} " is missing in the ${KRISP_3PARTY_LIB_DIR}")
+endif()
+
+find_library(mkl_core NAME ${LPREFIX}mkl_core${LSUFFIX} PATHS ${KRISP_3PARTY_LIB_DIR})
+if (NOT mkl_core)
+	message(FATAL_ERROR ${LPREFIX}mkl_core${LSUFFIX} " is missing in the ${KRISP_3PARTY_LIB_DIR}")
+endif()
+
+find_library(mkl_lp64 NAME ${LPREFIX}mkl_intel_ilp64${LSUFFIX} PATHS ${KRISP_3PARTY_LIB_DIR})
+if(NOT mkl_lp64)
+	message(FATAL_ERROR ${LPREFIX}mkl_intel_ilp64${LSUFFIX} " is missing in the ${KRISP_3PARTY_LIB_DIR}")
+endif()
+
+set(MKL_LIB_LIST ${mkl_lp64} ${mkl_seq} ${mkl_core})
 
 set(KRISP_THIRDPARTY_LIBS 
 	${MKL_LIB_LIST}
