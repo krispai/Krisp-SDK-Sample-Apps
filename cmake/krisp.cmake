@@ -2,6 +2,10 @@ find_library(LIBKRISP_ABSPATH NAMES krisp-audio-sdk PATHS ${KRISP_LIB_DIR})
 if (NOT LIBKRISP_ABSPATH) 
 	message(FATAL_ERROR "Can't find krisp-audio-sdk in ${KRISP_LIB_DIR}")
 endif()
+find_library(LIBKRISP_EX_ABSPATH NAMES krisp-audio-sdk-ex PATHS ${KRISP_LIB_DIR})
+if (NOT LIBKRISP_EX_ABSPATH) 
+	message(FATAL_ERROR "Can't find krisp-audio-sdk-ex in ${KRISP_LIB_DIR}")
+endif()
 
 if (WIN32)
 	include(krisp.third.party.win.x64.cmake)
@@ -15,5 +19,6 @@ endif()
 
 set(KRISP_LIBS 
 	${LIBKRISP_ABSPATH}
+	${LIBKRISP_EX_ABSPATH}
 	${KRISP_THIRDPARTY_LIBS}
 )

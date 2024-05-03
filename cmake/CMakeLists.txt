@@ -39,7 +39,8 @@ if (NOT DEFINED KRISP_SDK_PATH)
 	message(FATAL_ERROR "KRISP_SDK_PATH must be specified")
 endif()
 
-set(KRISP_INC_DIR ${KRISP_SDK_PATH}/include)                                            
+set(KRISP_INC_DIR ${KRISP_SDK_PATH}/include)
+set(KRISP_INC_LEGACY_DIR ${KRISP_SDK_PATH}/include-legacy)
 set(KRISP_LIB_DIR ${KRISP_SDK_PATH}/lib)
 set(KRISP_3PARTY_LIB_DIR ${KRISP_SDK_PATH}/external)
 
@@ -50,7 +51,7 @@ include(libsndfile.cmake)
 include(krisp.cmake)
 
 set(APPNAME_NC sample-nc)
-set(APPNAME_ASR sample-asr)
+set(APPNAME_NC_LEGACY sample-nc-legacy)
 set(DLLNAME krisp-dll)
 if (NOT WIN32)
 	set(APPNAME_DLL dll-test-app)
@@ -82,8 +83,8 @@ add_executable(
 )
 
 add_executable(
-	${APPNAME_ASR} 
-	${ROOT_DIR}/src/sample-asr/main.cpp
+	${APPNAME_NC_LEGACY} 
+	${ROOT_DIR}/src/sample-nc-legacy/main.cpp
 	${ROOT_DIR}/src/utils/sound_file.cpp
 	${ROOT_DIR}/src/utils/argument_parser.cpp
 )
@@ -97,24 +98,24 @@ target_include_directories(
 )
 
 target_include_directories(
-	${APPNAME_ASR}
+	${APPNAME_NC_LEGACY}
 	PRIVATE
 	${ROOT_DIR}/src/utils
 	${LIBSNDFILE_INC}
-	${KRISP_INC_DIR}
+	${KRISP_INC_LEGACY_DIR}
 )
 
 target_include_directories(
 	${DLLNAME}
 	PRIVATE
-	${KRISP_INC_DIR}
+	${KRISP_INC_LEGACY_DIR}
 )
 
 if (NOT WIN32)
 	target_include_directories(
 		${APPNAME_DLL}
 		PRIVATE
-		${KRISP_INC_DIR}
+		${KRISP_INC_LEGACY_DIR}
 	)
 endif()
 
@@ -125,7 +126,7 @@ target_link_libraries(
 )
 
 target_link_libraries(
-	${APPNAME_ASR}
+	${APPNAME_NC_LEGACY}
 	${LIBSNDFILE_ABSPATH}
 	${KRISP_LIBS}
 )
