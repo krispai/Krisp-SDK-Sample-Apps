@@ -141,21 +141,21 @@ endif()
 
 target_link_libraries(
 	${APPNAME_NC}
-	${LIBSNDFILE_ABSPATH}
 	${KRISP_LIBS}
+	${LIBSNDFILE_ABSPATH}
 )
 
 target_link_libraries(
 	${APPNAME_NC_LEGACY}
-	${LIBSNDFILE_ABSPATH}
 	${KRISP_LIBS}
+	${LIBSNDFILE_ABSPATH}
 )
 
 if (DEFINED STT)
 	target_link_libraries(
 		${APPNAME_STT}
-		${LIBSNDFILE_ABSPATH}
 		${KRISP_LIBS}
+		${LIBSNDFILE_ABSPATH}
 	)
 endif()
 
