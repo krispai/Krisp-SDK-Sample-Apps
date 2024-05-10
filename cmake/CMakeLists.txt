@@ -51,7 +51,7 @@ include(libsndfile.cmake)
 include(krisp.cmake)
 
 set(APPNAME_NC sample-nc)
-set(APPNAME_ASR sample-asr)
+set(APPNAME_STT sample-stt)
 set(APPNAME_NC_LEGACY sample-nc-legacy)
 set(DLLNAME krisp-dll)
 if (NOT WIN32)
@@ -90,8 +90,8 @@ add_executable(
 	${ROOT_DIR}/src/utils/argument_parser.cpp
 )
 add_executable(
-	${APPNAME_ASR} 
-	${ROOT_DIR}/src/sample-asr/main.cpp
+	${APPNAME_STT} 
+	${ROOT_DIR}/src/sample-stt/main.cpp
 	${ROOT_DIR}/src/utils/sound_file.cpp
 	${ROOT_DIR}/src/utils/argument_parser.cpp
 )
@@ -113,7 +113,7 @@ target_include_directories(
 )
 
 target_include_directories(
-	${APPNAME_ASR}
+	${APPNAME_STT}
 	PRIVATE
 	${ROOT_DIR}/src/utils
 	${LIBSNDFILE_INC}
@@ -146,7 +146,7 @@ target_link_libraries(
 	${KRISP_LIBS}
 )
 target_link_libraries(
-	${APPNAME_ASR}
+	${APPNAME_STT}
 	${LIBSNDFILE_ABSPATH}
 	${KRISP_LIBS}
 )
