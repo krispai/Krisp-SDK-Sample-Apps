@@ -52,6 +52,6 @@ set(KRISP_THIRDPARTY_LIBS
 )
 
 if (DEFINED STT)
-	include(krisp.third.party.stt.win.x64.cmake)
+	include(krisp.third.party.win.x64.stt.cmake)
 	set(KRISP_THIRDPARTY_LIBS ${KRISP_THIRDPARTY_LIBS} ${STT_LIBS})
 endif()
