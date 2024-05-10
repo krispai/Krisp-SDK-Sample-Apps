@@ -104,18 +104,18 @@ static void printTotalStats(const std::unique_ptr<INoiseCleaner> & noiseCleanerP
 	INoiseCleaner::CumulativeStats totalStats = noiseCleanerPtr->getCumulativeStats();
 
 	std::cout << "#--- Noise/Voice stats ---" << std::endl;
-	std::cout << "# - No     Noise: " << totalStats._noNoiseMs << " ms" << std::endl;
-	std::cout << "# - Low    Noise: " << totalStats._lowNoiseMs << " ms" << std::endl;
-	std::cout << "# - Medium Noise: " << totalStats._mediumNoiseMs << " ms" << std::endl;
-	std::cout << "# - High   Noise: " << totalStats._highNoiseMs << " ms" << std::endl;
+	std::cout << "# - No     Noise: " << totalStats.noNoiseMs << " ms" << std::endl;
+	std::cout << "# - Low    Noise: " << totalStats.lowNoiseMs << " ms" << std::endl;
+	std::cout << "# - Medium Noise: " << totalStats.mediumNoiseMs << " ms" << std::endl;
+	std::cout << "# - High   Noise: " << totalStats.highNoiseMs << " ms" << std::endl;
 	std::cout << "#-------------------------" << std::endl;
-	std::cout << "# - Talk time :   " << totalStats._talkTimeMs << " ms" << std::endl;
+	std::cout << "# - Talk time :   " << totalStats.talkTimeMs << " ms" << std::endl;
 	std::cout << "#-------------------------" << std::endl;
 }
 
 
 template <typename SamplingFormat>
-KrispAudioSdk::SamplingType getSamplingType()
+KrispAudioSdk::SampleType getSamplingType()
 {
 	static_assert(
 		(std::is_same<SamplingFormat, short>::value ||
@@ -124,11 +124,11 @@ KrispAudioSdk::SamplingType getSamplingType()
 
 	if (std::is_same<SamplingFormat, short>::value)
 	{
-		return KrispAudioSdk::SamplingType::Pcm16;
+		return KrispAudioSdk::SampleType::Pcm16;
 	}
 	if (std::is_same<SamplingFormat, float>::value)
 	{
-		return KrispAudioSdk::SamplingType::Float32;
+		return KrispAudioSdk::SampleType::Float32;
 	}
 }
 
@@ -159,12 +159,11 @@ int ncWavFileTmpl(
 	auto voiceProcessorBuild = KrispAudioSdk::VoiceProcessorBuilder();
 	std::vector<KrispAudioSdk::ModelId> modelsFound = voiceProcessorBuild.registerModels(modelsDir, true);
 
-	KrispAudioSdk::SamplingType samplingType = getSamplingType<SamplingFormat>();
-	auto attr = KrispAudioSdk::OutboundNoiseCleanerAttributes(samplingType, samplingRate);
-	attr.setStats(withStats);
+	KrispAudioSdk::SampleType sampleType = getSamplingType<SamplingFormat>();
+	auto config = KrispAudioSdk::OutboundNoiseCleanerConfiguration(sampleType, samplingRate);
+	config.enableStats = withStats;
 	std::unique_ptr<INoiseCleaner> noiseCleanerPtr =
-		voiceProcessorBuild.createNoiseCleaner(attr);
-
+		voiceProcessorBuild.createNoiseCleaner(config);
 	size_t frameSize = noiseCleanerPtr->getFrameSize();
 	size_t i;
 	for (i = 0; (i + 1) * frameSize <= wavDataIn.size(); ++i) {
@@ -179,8 +178,8 @@ int ncWavFileTmpl(
 			INoiseCleaner::FrameStats frameStats =
 				noiseCleanerPtr->getFrameStats();
 			std::cout << "[" << i + 1 << " x 10ms]"
-					<< " noiseEn: " << frameStats._noiseEnergy
-					<< ", voiceEn: " << frameStats._voiceEnergy << std::endl;
+					<< " noiseEn: " << frameStats.noiseEnergy
+					<< ", voiceEn: " << frameStats.voiceEnergy << std::endl;
 		}
 		if (withStats && i % 100 == 0) {
 			printTotalStats(noiseCleanerPtr);

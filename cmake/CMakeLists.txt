@@ -89,12 +89,15 @@ add_executable(
 	${ROOT_DIR}/src/utils/sound_file.cpp
 	${ROOT_DIR}/src/utils/argument_parser.cpp
 )
-add_executable(
-	${APPNAME_STT} 
-	${ROOT_DIR}/src/sample-stt/main.cpp
-	${ROOT_DIR}/src/utils/sound_file.cpp
-	${ROOT_DIR}/src/utils/argument_parser.cpp
-)
+
+if (DEFINED STT)
+	add_executable(
+		${APPNAME_STT} 
+		${ROOT_DIR}/src/sample-stt/main.cpp
+		${ROOT_DIR}/src/utils/sound_file.cpp
+		${ROOT_DIR}/src/utils/argument_parser.cpp
+	)
+endif()
 
 target_include_directories(
 	${APPNAME_NC}
@@ -112,13 +115,15 @@ target_include_directories(
 	${KRISP_INC_LEGACY_DIR}
 )
 
-target_include_directories(
-	${APPNAME_STT}
-	PRIVATE
-	${ROOT_DIR}/src/utils
-	${LIBSNDFILE_INC}
-	${KRISP_INC_LEGACY_DIR}
-)
+if (DEFINED STT)
+	target_include_directories(
+		${APPNAME_STT}
+		PRIVATE
+		${ROOT_DIR}/src/utils
+		${LIBSNDFILE_INC}
+		${KRISP_INC_LEGACY_DIR}
+	)
+endif()
 
 target_include_directories(
 	${DLLNAME}
@@ -145,11 +150,14 @@ target_link_libraries(
 	${LIBSNDFILE_ABSPATH}
 	${KRISP_LIBS}
 )
-target_link_libraries(
-	${APPNAME_STT}
-	${LIBSNDFILE_ABSPATH}
-	${KRISP_LIBS}
-)
+
+if (DEFINED STT)
+	target_link_libraries(
+		${APPNAME_STT}
+		${LIBSNDFILE_ABSPATH}
+		${KRISP_LIBS}
+	)
+endif()
 
 target_link_libraries(
 	${DLLNAME}
