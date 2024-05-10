@@ -31,10 +31,12 @@ LIBSNDFILE_INC and LIBSNDFILE_LIB directories is required by the sample-nc app f
 How to run the build
 
 ### On Mac/Linux run
+
+For Krisp NC SDK
 ```make```
 
-### On Windows run
-```make vs```
+For Krisp NC and STT SDK
+```make stt```
 
 This will produce a Visual Studio Solution project in the **vsbuild** folder.
 
