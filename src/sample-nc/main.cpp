@@ -1,19 +1,61 @@
-#include <type_traits>
 #include <iostream>
 #include <string>
 #include <vector>
 #include <locale>
 #include <codecvt>
 
-#include <krisp-audio-sdk-ex.hpp>
-
+#include <krisp-audio-sdk-nc.hpp>
+#include <krisp-audio-sdk-nc-stats.hpp>
 
 #include "argument_parser.hpp"
 #include "sound_file.hpp"
 
 
-using KrispAudioSdk::INoiseCleaner;
+static int krispAudioNcCleanAmbientNoise(
+		KrispAudioSessionID pSession,
+		const short * pFrameIn,
+		unsigned int frameInSize,
+		short * pFrameOut,
+		unsigned int frameOutSize)
+{
+	return krispAudioNcCleanAmbientNoiseInt16(
+		pSession, pFrameIn, frameInSize, pFrameOut, frameOutSize);
+}
 
+static int krispAudioNcCleanAmbientNoise(
+		KrispAudioSessionID pSession,
+		const float * pFrameIn,
+		unsigned int frameInSize,
+		float * pFrameOut,
+		unsigned int frameOutSize)
+{
+	return krispAudioNcCleanAmbientNoiseFloat(
+		pSession, pFrameIn, frameInSize, pFrameOut, frameOutSize);
+}
+
+static int krispAudioNcWithStatsCleanAmbientNoise(
+		KrispAudioSessionID pSession,
+		const short* pFrameIn,
+        unsigned int frameInSize,
+		short* pFrameOut,
+		unsigned int frameOutSize,
+		KrispAudioNcPerFrameInfo* energyInfo)
+{
+	return krispAudioNcWithStatsCleanAmbientNoiseInt16(
+		pSession, pFrameIn, frameInSize, pFrameOut, frameOutSize, energyInfo);
+}
+
+static int krispAudioNcWithStatsCleanAmbientNoise(
+		KrispAudioSessionID pSession,
+		const float* pFrameIn,
+        unsigned int frameInSize,
+		float* pFrameOut,
+		unsigned int frameOutSize,
+		KrispAudioNcPerFrameInfo* energyInfo)
+{
+	return krispAudioNcWithStatsCleanAmbientNoiseFloat(
+		pSession, pFrameIn, frameInSize, pFrameOut, frameOutSize, energyInfo);
+}
 
 template <typename T>
 int error(const T& e) {
@@ -22,16 +64,16 @@ int error(const T& e) {
 }
 
 static bool parseArguments(std::string& input, std::string& output,
-		std::string& modelsDir, bool &stats, int argc, char** argv) {
+		std::string& weight, bool &stats, int argc, char** argv) {
 	ArgumentParser p(argc, argv);
 	p.addArgument("--input", "-i", IMPORTANT);
 	p.addArgument("--output", "-o",IMPORTANT);
-	p.addArgument("--model_dir", "-m", IMPORTANT);
+	p.addArgument("--model_path", "-m", IMPORTANT);
 	p.addArgument("--stats", "-s", OPTIONAL);
 	if (p.parse()) {
 		input = p.getArgument("-i");
 		output = p.getArgument("-o");
-		modelsDir = p.getArgument("-m");
+		weight = p.getArgument("-m");
 		stats = p.getOptionalArgument("-s");
 	} else {
 		std::cerr << p.getError();
@@ -40,34 +82,33 @@ static bool parseArguments(std::string& input, std::string& output,
 	return true;
 }
 
-using KrispAudioSdk::SamplingRate;
-static std::pair<SamplingRate, bool> getKrispSamplingRate(unsigned rate) {
-	std::pair<SamplingRate, bool> result;
+static std::pair<KrispAudioSamplingRate, bool> getKrispSamplingRate(unsigned rate) {
+	std::pair<KrispAudioSamplingRate, bool> result;
 	result.second = true;
 	switch (rate) {
 	case 8000:
-		result.first = SamplingRate::Sr8000;
+		result.first = KRISP_AUDIO_SAMPLING_RATE_8000HZ;
 		break;
 	case 16000:
-		result.first = SamplingRate::Sr16000;
+		result.first = KRISP_AUDIO_SAMPLING_RATE_16000HZ;
 		break;
 	case 32000:
-		result.first = SamplingRate::Sr32000;
+		result.first = KRISP_AUDIO_SAMPLING_RATE_32000HZ;
 		break;
 	case 44100:
-		result.first = SamplingRate::Sr44100;
+		result.first = KRISP_AUDIO_SAMPLING_RATE_44100HZ;
 		break;
 	case 48000:
-		result.first = SamplingRate::Sr48000;
+		result.first = KRISP_AUDIO_SAMPLING_RATE_48000HZ;
 		break;
 	case 88200:
-		result.first = SamplingRate::Sr88200;
+		result.first = KRISP_AUDIO_SAMPLING_RATE_88200HZ;
 		break;
 	case 96000:
-		result.first = SamplingRate::Sr96000;
+		result.first = KRISP_AUDIO_SAMPLING_RATE_96000HZ;
 		break;
 	default:
-		result.first = SamplingRate::Sr16000;
+		result.first = KRISP_AUDIO_SAMPLING_RATE_16000HZ;
 		result.second = false;
 	}
 	return result;
@@ -99,100 +140,203 @@ static std::pair<bool, std::string> WriteFramesToFile(
 	return writeSoundFileFloat(fileName, frames, samplingRate);
 }
 
-static void printTotalStats(const std::unique_ptr<INoiseCleaner> & noiseCleanerPtr)
+static void getNcStats(KrispAudioSessionID session, KrispAudioNcStats* ncStats)
 {
-	INoiseCleaner::CumulativeStats totalStats = noiseCleanerPtr->getCumulativeStats();
+	int result = krispAudioNcWithStatsRetrieveStats(session, ncStats);
+	if (0 != result) {
+		std::cerr << "Error retrieving NC stats " << std::endl;
+		return;
+	}
 
 	std::cout << "#--- Noise/Voice stats ---" << std::endl;
-	std::cout << "# - No     Noise: " << totalStats.noNoiseMs << " ms" << std::endl;
-	std::cout << "# - Low    Noise: " << totalStats.lowNoiseMs << " ms" << std::endl;
-	std::cout << "# - Medium Noise: " << totalStats.mediumNoiseMs << " ms" << std::endl;
-	std::cout << "# - High   Noise: " << totalStats.highNoiseMs << " ms" << std::endl;
+	std::cout << "# - No     Noise: " <<
+		ncStats->noiseStats.noNoiseMs << " ms" << std::endl;
+	std::cout << "# - Low    Noise: " <<
+		ncStats->noiseStats.lowNoiseMs << " ms" << std::endl;
+	std::cout << "# - Medium Noise: " <<
+		ncStats->noiseStats.mediumNoiseMs << " ms" << std::endl;
+	std::cout << "# - High   Noise: " <<
+		ncStats->noiseStats.highNoiseMs << " ms" << std::endl;
 	std::cout << "#-------------------------" << std::endl;
-	std::cout << "# - Talk time :   " << totalStats.talkTimeMs << " ms" << std::endl;
+	std::cout << "# - Talk time :   " <<
+		ncStats->voiceStats.talkTimeMs << " ms" << std::endl;
 	std::cout << "#-------------------------" << std::endl;
 }
 
-
-template <typename SamplingFormat>
-KrispAudioSdk::SampleType getSamplingType()
+static KrispAudioSessionID krispAudioNcWithStatsCreateSession(
+    KrispAudioSamplingRate inputSampleRate,
+    KrispAudioSamplingRate outputSampleRate,
+    KrispAudioFrameDuration frameDuration,
+    const char* modelName,
+	short)
 {
-	static_assert(
-		(std::is_same<SamplingFormat, short>::value ||
-		std::is_same<SamplingFormat, float>::value),
-	"SamplingFormat should be either float or short");
+	return krispAudioNcWithStatsCreateSessionInt16(
+		inputSampleRate,
+		outputSampleRate,
+		frameDuration,
+		modelName);
+}
 
-	if (std::is_same<SamplingFormat, short>::value)
-	{
-		return KrispAudioSdk::SampleType::Pcm16;
-	}
-	if (std::is_same<SamplingFormat, float>::value)
-	{
-		return KrispAudioSdk::SampleType::Float32;
-	}
+static KrispAudioSessionID krispAudioNcWithStatsCreateSession(
+    KrispAudioSamplingRate inputSampleRate,
+    KrispAudioSamplingRate outputSampleRate,
+    KrispAudioFrameDuration frameDuration,
+    const char* modelName,
+	float)
+{
+	return krispAudioNcWithStatsCreateSessionFloat(
+		inputSampleRate,
+		outputSampleRate,
+		frameDuration,
+		modelName);
+}
+
+static KrispAudioSessionID krispAudioNcCreateSession(
+    KrispAudioSamplingRate inputSampleRate,
+    KrispAudioSamplingRate outputSampleRate,
+    KrispAudioFrameDuration frameDuration,
+    const char* modelName,
+	short)
+{
+	return krispAudioNcCreateSessionInt16(
+		inputSampleRate,
+		outputSampleRate,
+		frameDuration,
+		modelName);
+}
+
+static KrispAudioSessionID krispAudioNcCreateSession(
+    KrispAudioSamplingRate inputSampleRate,
+    KrispAudioSamplingRate outputSampleRate,
+    KrispAudioFrameDuration frameDuration,
+    const char* modelName,
+	float)
+{
+	return krispAudioNcCreateSessionFloat(
+		inputSampleRate,
+		outputSampleRate,
+		frameDuration,
+		modelName);
 }
 
 template <typename SamplingFormat>
 int ncWavFileTmpl(
 		const SoundFile & inSndFile,
 		const std::string & output,
-		const std::wstring & modelsDir,
+		const std::string & weight,
 		bool withStats) {
 	std::vector<SamplingFormat> wavDataIn;
 	std::vector<SamplingFormat> wavDataOut;
 
 	readAllFrames(inSndFile, wavDataIn);
 
-	wavDataOut.resize(wavDataIn.size());
-
 	if (inSndFile.getHasError()) {
 		return error(inSndFile.getErrorMsg());
 	}
 
-	unsigned samplingRateInt = inSndFile.getHeader().getSamplingRate();
-	auto samplingRateResult = getKrispSamplingRate(samplingRateInt);
+	unsigned samplingRate = inSndFile.getHeader().getSamplingRate();
+	auto samplingRateResult = getKrispSamplingRate(samplingRate);
 	if (!samplingRateResult.second) {
 		return error("Unsupported sample rate");
 	}
-	KrispAudioSdk::SamplingRate samplingRate = samplingRateResult.first;
+	KrispAudioSamplingRate inRate = samplingRateResult.first;
+	const KrispAudioSamplingRate outRate = inRate;
+	constexpr size_t frameDurationMillis = 10;
+	size_t inputFrameSize = (samplingRate * frameDurationMillis) / 1000;
+	size_t outputFrameSize = inputFrameSize;
 
-	auto voiceProcessorBuild = KrispAudioSdk::VoiceProcessorBuilder();
-	std::vector<KrispAudioSdk::ModelId> modelsFound = voiceProcessorBuild.registerModels(modelsDir, true);
+	if (krispAudioGlobalInit(nullptr) != 0) {
+		return error("Failed to initialization Krisp SDK");
+	}
 
-	KrispAudioSdk::SampleType sampleType = getSamplingType<SamplingFormat>();
-	auto config = KrispAudioSdk::OutboundNoiseCleanerConfiguration(sampleType, samplingRate);
-	config.enableStats = withStats;
-	std::unique_ptr<INoiseCleaner> noiseCleanerPtr =
-		voiceProcessorBuild.createNoiseCleaner(config);
-	size_t frameSize = noiseCleanerPtr->getFrameSize();
+	std::wstring_convert<std::codecvt_utf8<wchar_t>> wstringConverter;
+	std::wstring modelPath = wstringConverter.from_bytes(weight);
+	std::string modelAlias = "model";
+	if (krispAudioSetModel(modelPath.c_str(), modelAlias.c_str()) != 0) {
+		return error("Error loading AI model");
+	}
+
+	KrispAudioSessionID session = nullptr;
+	KrispAudioFrameDuration krispFrameDuration =
+		KRISP_AUDIO_FRAME_DURATION_10MS;
+	if (withStats) {
+		session = krispAudioNcWithStatsCreateSession(inRate, outRate,
+				krispFrameDuration, modelAlias.c_str(), SamplingFormat());
+	}
+	else {
+		session = krispAudioNcCreateSession(inRate, outRate,
+				krispFrameDuration, modelAlias.c_str(), SamplingFormat());
+	}
+
+
+	if (nullptr == session) {
+		return error("Error creating session");
+	}
+
+	KrispAudioNcStats ncStats;
+	KrispAudioNcPerFrameInfo perFrameInfo;
+
+	wavDataOut.resize(wavDataIn.size() * outputFrameSize / inputFrameSize);
 	size_t i;
-	for (i = 0; (i + 1) * frameSize <= wavDataIn.size(); ++i) {
-		int result = noiseCleanerPtr->processFrame(
-			&wavDataIn[i * frameSize], &wavDataOut[i * frameSize]);
-		if (!result) {
+	for (i = 0; (i + 1) * inputFrameSize <= wavDataIn.size(); ++i) {
+		int result;
+		if (withStats) {
+			result = krispAudioNcWithStatsCleanAmbientNoise(
+				session,
+				&wavDataIn[i * inputFrameSize],
+				static_cast<unsigned int>(inputFrameSize),
+				&wavDataOut[i * outputFrameSize],
+				static_cast<unsigned int>(outputFrameSize),
+				&perFrameInfo
+			);
+		}
+		else {
+			result = krispAudioNcCleanAmbientNoise(
+				session,
+				&wavDataIn[i * inputFrameSize],
+				static_cast<unsigned int>(inputFrameSize),
+				&wavDataOut[i * outputFrameSize],
+				static_cast<unsigned int>(outputFrameSize)
+			);
+		}
+		if (0 != result) {
 			std::cerr << "Error cleaning noise on " << i << " frame"
 				<< std::endl;
 			break;
 		}
 		if (withStats) {
-			INoiseCleaner::FrameStats frameStats =
-				noiseCleanerPtr->getFrameStats();
-			std::cout << "[" << i + 1 << " x 10ms]"
-					<< " noiseEn: " << frameStats.noiseEnergy
-					<< ", voiceEn: " << frameStats.voiceEnergy << std::endl;
+			std::cout << "[" << i + 1 << " x " << frameDurationMillis << "ms]"
+				<< " noiseEn: " << perFrameInfo.noiseEnergy
+				<< ", voiceEn: " << perFrameInfo.voiceEnergy << std::endl;
 		}
 		if (withStats && i % 100 == 0) {
-			printTotalStats(noiseCleanerPtr);
+			getNcStats(session, &ncStats);
 		}
 	}
-	wavDataOut.resize(i * frameSize);
+	wavDataOut.resize(i * outputFrameSize);
 
 	if (withStats) {
 		std::cout << "Getting Final Call stats..." << std::endl;
-		printTotalStats(noiseCleanerPtr);
+		getNcStats(session, &ncStats);
 	}
 
-	auto pairResult = WriteFramesToFile(output, wavDataOut, samplingRateInt);
+	if (withStats) {
+		if (0 != krispAudioNcWithStatsCloseSession(session)) {
+			return error("Error calling krispAudioNcWithStatsCloseSession");
+		}
+	}
+	else {
+		if (0 != krispAudioNcCloseSession(session)) {
+			return error("Error calling krispAudioNcCloseSession");
+		}
+	}
+	session = nullptr;
+
+	if (0 != krispAudioGlobalDestroy()) {
+		return error("Error calling krispAudioGlobalDestroy");
+	}
+
+	auto pairResult = WriteFramesToFile(output, wavDataOut, samplingRate);
 	if (!pairResult.first) {
 		return error(pairResult.second);
 	}
@@ -201,29 +345,27 @@ int ncWavFileTmpl(
 }
 
 static int ncWavFile(const std::string& input, const std::string& output,
-		const std::string& modelsDir, bool withStats) {
+		const std::string& weight, bool withStats) {
 	SoundFile inSndFile;
 	inSndFile.loadHeader(input);
 	if (inSndFile.getHasError()) {
 		return error(inSndFile.getErrorMsg());
 	}
-	std::wstring_convert<std::codecvt_utf8<wchar_t>> wstringConverter;
-	std::wstring modelsDirWide = wstringConverter.from_bytes(modelsDir);
 	auto sndFileHeader = inSndFile.getHeader();
 	if (sndFileHeader.getFormat() == SoundFileFormat::PCM16) {
-		return ncWavFileTmpl<short>(inSndFile, output, modelsDirWide, withStats);
+		return ncWavFileTmpl<short>(inSndFile, output, weight, withStats);
 	}
 	if (sndFileHeader.getFormat() == SoundFileFormat::FLOAT) {
-		return ncWavFileTmpl<float>(inSndFile, output, modelsDirWide, withStats);
+		return ncWavFileTmpl<float>(inSndFile, output, weight, withStats);
 	}
 	return error("The sound file format should be PCM16 or FLOAT.");
 }
 
 int main(int argc, char** argv) {
-	std::string in, out, modelsDir;
+	std::string in, out, weight;
 	bool stats = false;
-	if (parseArguments(in, out, modelsDir, stats, argc, argv)) {
-		return ncWavFile(in, out, modelsDir, stats);
+	if (parseArguments(in, out, weight, stats, argc, argv)) {
+		return ncWavFile(in, out, weight, stats);
 	} else {
 		std::cerr << "\nUsage:\n\t" << argv[0]
 			<< " -i input.wav -o output.wav -m model_path" << std::endl;
