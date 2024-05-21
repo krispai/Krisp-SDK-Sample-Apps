@@ -2,10 +2,6 @@ find_library(LIBKRISP_ABSPATH NAMES krisp-audio-sdk PATHS ${KRISP_LIB_DIR})
 if (NOT LIBKRISP_ABSPATH) 
 	message(FATAL_ERROR "Can't find krisp-audio-sdk in ${KRISP_LIB_DIR}")
 endif()
-find_library(LIBKRISP_EX_ABSPATH NAMES krisp-audio-sdk-ex PATHS ${KRISP_LIB_DIR})
-if (NOT LIBKRISP_EX_ABSPATH) 
-	message(FATAL_ERROR "Can't find krisp-audio-sdk-ex in ${KRISP_LIB_DIR}")
-endif()
 
 if (${CMAKE_SYSTEM_PROCESSOR} MATCHES ".*(arm|ARM).*")
 	set (ARM_CPU 1)
@@ -26,7 +22,6 @@ elseif (UNIX AND NOT APPLE AND ARM_CPU)
 endif()
 
 set(KRISP_LIBS 
-	${LIBKRISP_EX_ABSPATH}
 	${LIBKRISP_ABSPATH}
 	${KRISP_THIRDPARTY_LIBS}
 )
