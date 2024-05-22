@@ -1,13 +1,13 @@
 cmake_minimum_required(VERSION 3.5)
 
-if (WIN32)
+if(WIN32)
 	include(visualstudio.cmake NO_POLICY_SCOPE)
 endif()
 
 project("Krisp SDK Sample Apps")
 
 # Set 'Release' or 'Debug'
-set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_BUILD_TYPE Release)
 
 get_filename_component(ROOT_DIR ${PROJECT_SOURCE_DIR} DIRECTORY)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${ROOT_DIR}/bin)
@@ -35,21 +35,22 @@ if(UNIX OR APPLE)
     endif()
 endif()
 
-if (NOT DEFINED KRISP_SDK_PATH)
+if(NOT DEFINED KRISP_SDK_PATH)
 	message(FATAL_ERROR "KRISP_SDK_PATH must be specified")
 endif()
 
 set(KRISP_INC_DIR ${KRISP_SDK_PATH}/include)                                            
 set(KRISP_LIB_DIR ${KRISP_SDK_PATH}/lib)
 
+if(UNIX AND NOT APPLE)
+	set(KRISP_LIB_DIR ${KRISP_LIB_DIR}/x64)
+endif()
+
 # is needed to get ${LIBSNDFILE_ABSPATH} and ${LIBSNDFILE_INC}
 include(libsndfile.cmake)
 
 # Krisp SDK libraries are applied to all targets
 include(krisp.cmake)
-
-# Libresample is required for Krisp SDK
-#include(libresample.cmake)
 
 set(APPNAME_NC sample-nc)
 set(DLLNAME krisp-dll)
@@ -108,6 +109,10 @@ target_link_libraries(
 	${DLLNAME}
 	${KRISP_LIBS}
 )
+
+if(UNIX AND NOT APPLE)
+	include(mkl.linux.cmake)
+endif()
 
 target_link_libraries(
 	${APPNAME_DLL}

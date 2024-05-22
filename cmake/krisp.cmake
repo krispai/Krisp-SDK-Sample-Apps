@@ -3,10 +3,14 @@ if (NOT LIBKRISP_ABSPATH)
 	message(FATAL_ERROR "Can't find krisp-audio-sdk in the ${KRISP_LIB_DIR}")
 endif()
 
-if (${CMAKE_SYSTEM_PROCESSOR} MATCHES ".*(arm|ARM).*")
-	include(krisp.third.party.mac.arm.cmake)
-else()
-	include(krisp.third.party.mac.x64.cmake)
+if(APPLE)
+	if(${CMAKE_SYSTEM_PROCESSOR} MATCHES ".*(arm|ARM).*")
+		include(krisp.third.party.mac.arm.cmake)
+	else()
+		include(krisp.third.party.mac.x64.cmake)
+	endif()
+elseif(UNIX)
+	include(krisp.third.party.linux.x64.cmake)
 endif()
 
 set(KRISP_LIBS 
