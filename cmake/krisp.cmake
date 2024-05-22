@@ -1,6 +1,6 @@
 find_library(LIBKRISP_ABSPATH NAMES krisp-audio-sdk-static PATHS ${KRISP_LIB_DIR})
 if (NOT LIBKRISP_ABSPATH) 
-	message(FATAL_ERROR "Can't find krisp-audio-sdk in the ${KRISP_LIB_DIR}")
+	message(FATAL_ERROR "Can't find krisp-audio-sdk in the " ${KRISP_LIB_DIR})
 endif()
 
 if(APPLE)
@@ -11,6 +11,8 @@ if(APPLE)
 	endif()
 elseif(UNIX)
 	include(krisp.third.party.linux.x64.cmake)
+elseif(WIN32)
+	include(krisp.third.party.windows.x64.cmake)
 endif()
 
 set(KRISP_LIBS 

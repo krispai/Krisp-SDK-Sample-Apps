@@ -44,7 +44,10 @@ set(KRISP_LIB_DIR ${KRISP_SDK_PATH}/lib)
 
 if(UNIX AND NOT APPLE)
 	set(KRISP_LIB_DIR ${KRISP_LIB_DIR}/x64)
+elseif(WIN32)
+	set(KRISP_LIB_DIR ${KRISP_LIB_DIR}/x64/Release)
 endif()
+
 
 # is needed to get ${LIBSNDFILE_ABSPATH} and ${LIBSNDFILE_INC}
 include(libsndfile.cmake)
