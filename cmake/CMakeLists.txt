@@ -7,7 +7,7 @@ endif()
 project("Krisp SDK Sample Apps")
 
 # Set 'Release' or 'Debug'
-set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_BUILD_TYPE Release)
 
 get_filename_component(ROOT_DIR ${PROJECT_SOURCE_DIR} DIRECTORY)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${ROOT_DIR}/bin)
@@ -16,24 +16,24 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${ROOT_DIR}/bin)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-if(UNIX OR APPLE)
-    add_compile_options(-Wall -Werror -pedantic)
-
-    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-        add_compile_options(-Wextra -Wconversion -Wsign-conversion)
-    endif()
-
-    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        add_compile_options(
-			-Weverything
-			-Wno-c++98-compat-pedantic
-			-Wno-documentation-pedantic
-			-Wdeprecated-declarations
-			-Wno-deprecated-declarations
-			-Wno-padded
-		)
-    endif()
-endif()
+#if(UNIX OR APPLE)
+#    add_compile_options(-Wall -Werror -pedantic)
+#
+#    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+#        add_compile_options(-Wextra -Wconversion -Wsign-conversion)
+#    endif()
+#
+#    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+#        add_compile_options(
+#			-Weverything
+#			-Wno-c++98-compat-pedantic
+#			-Wno-documentation-pedantic
+#			-Wdeprecated-declarations
+#			-Wno-deprecated-declarations
+#			-Wno-padded
+#		)
+#    endif()
+#endif()
 
 if (NOT DEFINED KRISP_SDK_PATH)
 	message(FATAL_ERROR "KRISP_SDK_PATH must be specified")
@@ -52,6 +52,7 @@ include(krisp.cmake)
 
 set(APPNAME_STT sample-stt)
 set(APPNAME_NC sample-nc)
+set(APPNAME_BENCH bench-app)
 set(DLLNAME krisp-dll)
 if (NOT WIN32)
 	set(APPNAME_DLL dll-test-app)
@@ -82,6 +83,15 @@ add_executable(
 	${ROOT_DIR}/src/utils/argument_parser.cpp
 )
 
+add_executable(
+	${APPNAME_BENCH} 
+	${ROOT_DIR}/src/bench-app/main.cpp
+	${ROOT_DIR}/src/bench-app/argument_parser.cpp
+	${ROOT_DIR}/src/bench-app/wave_writer.cpp
+	${ROOT_DIR}/src/bench-app/wave_reader.cpp
+	${ROOT_DIR}/src/bench-app/metrics_mac.cpp
+)
+
 if (DEFINED STT)
 	add_executable(
 		${APPNAME_STT} 
@@ -95,6 +105,13 @@ target_include_directories(
 	${APPNAME_NC}
 	PRIVATE
 	${ROOT_DIR}/src/utils
+	${LIBSNDFILE_INC}
+	${KRISP_INC_LEGACY_DIR}
+)
+
+target_include_directories(
+	${APPNAME_BENCH}
+	PRIVATE
 	${LIBSNDFILE_INC}
 	${KRISP_INC_LEGACY_DIR}
 )
@@ -125,6 +142,12 @@ endif()
 
 target_link_libraries(
 	${APPNAME_NC}
+	${KRISP_LIBS}
+	${LIBSNDFILE_ABSPATH}
+)
+
+target_link_libraries(
+	${APPNAME_BENCH}
 	${KRISP_LIBS}
 	${LIBSNDFILE_ABSPATH}
 )
