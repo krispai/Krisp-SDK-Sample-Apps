@@ -110,6 +110,12 @@ target_include_directories(
 	${KRISP_INC_DIR}
 )
 
+target_include_directories(
+	audio_processor
+	PRIVATE
+	${KRISP_INC_DIR}
+)
+
 target_link_libraries(
 	${APPNAME_NC}
 	${LIBSNDFILE_ABSPATH}
@@ -133,4 +139,5 @@ target_link_libraries(
 target_link_libraries(
 	audio_processor
 	PRIVATE Python3::NumPy
+	${KRISP_LIBS}
 )
