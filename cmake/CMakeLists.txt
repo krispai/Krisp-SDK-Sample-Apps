@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.12)
 
 if(WIN32)
 	include(visualstudio.cmake NO_POLICY_SCOPE)
@@ -65,6 +65,14 @@ if (WIN32 AND MSVC)
 	add_compile_definitions(_ITERATOR_DEBUG_LEVEL=0)
 endif()
 
+find_package(Python3 COMPONENTS Development NumPy)
+find_package(pybind11 REQUIRED)
+
+pybind11_add_module(
+	audio_processor
+	${ROOT_DIR}/src/sample-python/audio_processor.cpp
+)
+
 add_library(
 	${DLLNAME} SHARED
 	${ROOT_DIR}/src/sample-dll/dll-main.cpp
@@ -120,4 +128,9 @@ endif()
 target_link_libraries(
 	${APPNAME_DLL}
 	${DLLNAME}
+)
+
+target_link_libraries(
+	audio_processor
+	PRIVATE Python3::NumPy
 )
