@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 import soundfile as sf
 import numpy as np
 import audio_processor
@@ -25,7 +26,7 @@ class AudioProcessorWrapper:
         return output_frames[:(num_of_frames * samples_per_frame * self.__channels)]
 
 
-def simulate_audio_stream(file_path, chunk_size_ms, model_path):
+def simulate_audio_stream(file_path, output_file_path, chunk_size_ms, model_path):
     with sf.SoundFile(file_path) as inputFile:
         audio_data = inputFile.read()
         sample_rate = inputFile.samplerate
@@ -44,14 +45,20 @@ def simulate_audio_stream(file_path, chunk_size_ms, model_path):
             all_frames.extend(frames)
         if all_frames:
             all_frames = np.concatenate(all_frames, axis=0)
-        with sf.SoundFile('new_file.wav', 'w', samplerate=sample_rate, channels=channels, subtype="FLOAT") as myfile:
+        with sf.SoundFile(output_file_path, 'w', samplerate=sample_rate, channels=channels, subtype="FLOAT") as myfile:
             myfile.write(all_frames)
 
+def get_command_line_arguments():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(description="Process FLOAT WAV files with Krisp Audio SDK.")
+    parser.add_argument("-i", "--input", type=str, required=True, help="Input WAV file path.")
+    parser.add_argument("-o", "--output", type=str, required=True, help="Output WAV file path.")
+    parser.add_argument("-m", "--model", type=str, required=True, help="Path to the AI model.")
+    return parser.parse_args()
+
 def _entry():
-    print("HI")
-    input_wav = "/Users/atatalyan/dev/gitrepos/Krisp-SDK-Sample-Apps/test/nc32f-32k.wav"
-    model_path = "/Users/atatalyan/dev/krisp-sdk/models/inbound/c7.n.s.9f4389.thw";
-    simulate_audio_stream(input_wav, 20, model_path)
+    args = get_command_line_arguments()
+    simulate_audio_stream(args.input, args.output, 20, args.model)
 
 if __name__ == "__main__":
     _entry()
