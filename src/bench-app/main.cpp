@@ -277,6 +277,7 @@ int run_test(std::string& input, std::string& output, std::string& weight, std::
     KrispAudioSessionID noiseDBSessionID = nullptr;
     KrispAudioSessionID ringtoneSessionID = nullptr;
 
+	std::cout << "Creating session with inRate " << inRate << " outRate " << outRate << std::endl;
     prf.startTimePoint();
     if (gNoiseDb)
     {
@@ -388,15 +389,21 @@ int run_test(std::string& input, std::string& output, std::string& weight, std::
     std::vector<double> cpuUsage;
     std::vector<double> memoryUsage;
     std::vector<double> timeSpent;
+	//std::vector<double> sleepDeltas;
+	double lastSleepDelta = 0.0;
     if (gPrfLogs)
     {
         size_t buffSize = inDataSize / (IN_BUF_SIZE * FRAME_SKIP_COUNT);
         cpuUsage.reserve(buffSize);
         memoryUsage.reserve(buffSize);
         timeSpent.reserve(buffSize);
+		//sleepDeltas.reserve(buffSize);
     }
 
+	typedef std::chrono::high_resolution_clock::time_point TimePoint;
+	TimePoint beforeAudioProcessing = std::chrono::high_resolution_clock::now();
     size_t i;
+    uint64_t cpuTimeBeforeAudioProcessing = prf.getCPUTimes();
     for (i = 0; (i+1)*IN_BUF_SIZE <= inDataSize; ++i )
     {
         if (gPrfLogs || gKrispAppMode)
@@ -565,15 +572,25 @@ int run_test(std::string& input, std::string& output, std::string& weight, std::
             else {
                 // Voice/Noise energy API disabled, run the main API.
                 if (isShort) {
-                    if (0 > krispAudioNcCleanAmbientNoiseInt16(ncSessionID, &wavShortDataIn[i*IN_BUF_SIZE], static_cast<unsigned int>(IN_BUF_SIZE),
-                        &wavShortDataOut[i*OUT_BUF_SIZE], static_cast<unsigned int>(OUT_BUF_SIZE))) {
+					auto result = krispAudioNcCleanAmbientNoiseInt16(
+							ncSessionID,
+							&wavShortDataIn[i*IN_BUF_SIZE],
+							static_cast<unsigned int>(IN_BUF_SIZE),
+							&wavShortDataOut[i*OUT_BUF_SIZE],
+							static_cast<unsigned int>(OUT_BUF_SIZE));
+                    if (0 > result) {
                         cerr << "Error in DeNoise processing!" << endl;
                         break;
                     }
                 }
                 else {
-                    if (0 > krispAudioNcCleanAmbientNoiseFloat(ncSessionID, &wavFloatDataIn[i*IN_BUF_SIZE], static_cast<unsigned int>(IN_BUF_SIZE),
-                        &wavFloatDataOut[i*OUT_BUF_SIZE], static_cast<unsigned int>(OUT_BUF_SIZE))) {
+					auto result = krispAudioNcCleanAmbientNoiseFloat(
+							ncSessionID,
+							&wavFloatDataIn[i*IN_BUF_SIZE],
+							static_cast<unsigned int>(IN_BUF_SIZE),
+							&wavFloatDataOut[i*OUT_BUF_SIZE],
+							static_cast<unsigned int>(OUT_BUF_SIZE));
+                    if (0 > result) {
                         cerr << "Error in DeNoise processing!" << endl;
                         break;
                     }
@@ -588,22 +605,34 @@ int run_test(std::string& input, std::string& output, std::string& weight, std::
 
             if (gKrispAppMode)
             {
-                double frameProcDur = prf.getTimeInUsec() / 1000.0;
-                auto sleepDuration = KRISP_AUDIO_FRAME_DURATION_10MS - ceil(frameProcDur);
-                if(sleepDuration >= 0)
-                    prf.sleepMs(sleepDuration);
-                else
-                    std::cout << "WARNING: Process time exits limits: " << sleepDuration << " ms" << std::endl;
+                double frameProcDur = prf.getTimeDurationMilli();
+                double sleepDuration = KRISP_AUDIO_FRAME_DURATION_10MS - frameProcDur;
+                if(sleepDuration <= 0) {
+					std::cout << "WARNING: Frame processing time exits limits: "
+						<< frameProcDur << " ms" << std::endl;
+				}
+				sleepDuration -= lastSleepDelta;
+				if (sleepDuration > 0.0) {
+					TimePoint beforeSleep = std::chrono::high_resolution_clock::now();
+					prf.sleepMs(sleepDuration);
+					TimePoint afterSleep = std::chrono::high_resolution_clock::now();
+					std::chrono::duration<double, std::milli> actualSleepTime = afterSleep - beforeSleep;
+					double sleepDelta = actualSleepTime.count() - sleepDuration;
+					//sleepDeltas.push_back(sleepDelta);
+					lastSleepDelta = sleepDelta;
+				}
+				else {
+					lastSleepDelta = -sleepDuration;
+				}
             }
 
-            if (gPrfLogs)
-            {
-                ncProcTime += prf.getTimeInUsec();
+            if (gPrfLogs) {
+                ncProcTime += prf.getTimeDurationMilli();
                 ncProcessedCount++;
 
                 if (!(++blockProcessedCount % FRAME_SKIP_COUNT)) {
                     cpuUsage.push_back(prf.getCPUUsageOnCurrentProcess());
-                    timeSpent.push_back(ncProcTime / 1000.0);
+                    timeSpent.push_back(ncProcTime);
                     memoryUsage.push_back(prf.getCurrentProcessMemory() - (inDataSizeKb + outDatSizeKb));
 
                     std::cout << "Processed " << blockProcessedCount
@@ -616,6 +645,26 @@ int run_test(std::string& input, std::string& output, std::string& weight, std::
             }
         }
     }
+
+    uint64_t cpuTimeAfterAudioProcessing = prf.getCPUTimes();
+    uint64_t cpuTimeAudioProcessingUSec = cpuTimeAfterAudioProcessing - cpuTimeBeforeAudioProcessing;
+    TimePoint afterAudioProcessing = std::chrono::high_resolution_clock::now();
+
+    std::cout << "cpu time before: " << cpuTimeBeforeAudioProcessing
+              << "\ncpu time after: " << cpuTimeAfterAudioProcessing
+              << "\ncpu time diff:" << cpuTimeAudioProcessingUSec
+              << std::endl;
+
+    auto processingTime = std::chrono::duration_cast<std::chrono::microseconds>(
+		afterAudioProcessing - beforeAudioProcessing);
+
+    std::cout << "\ntime diff: " << processingTime.count() << std::endl;
+
+    std::cout << "CPU %: " <<
+		static_cast<double>(cpuTimeAudioProcessingUSec) * 100 / processingTime.count() << std::endl;
+
+	std::chrono::duration<double> procesingTime = afterAudioProcessing - beforeAudioProcessing;
+	std::cout << "MY PROCESING TIME SECONDS: " << procesingTime.count() << std::endl;
 
     if (gPrfLogs)
     {
@@ -635,6 +684,7 @@ int run_test(std::string& input, std::string& output, std::string& weight, std::
         sum = std::accumulate(timeSpent.begin(), timeSpent.end(), 0.0);
         auto timeSpentAvg = sum / timeSpent.size();
         std::sort(timeSpent.begin(), timeSpent.end());
+		// TODO: it's not smart to sort array to find min and max point.
         auto timeSpentMin = timeSpent.front();
         auto timeSpentMax = timeSpent.back();
 
@@ -650,6 +700,11 @@ int run_test(std::string& input, std::string& output, std::string& weight, std::
             << ", CPU usage: " << cpuUsageMax << " %"
             << ", Memory usage: " << (int)memoryUsageMax << " Kb" << std::endl;
         std::cout << "-----------------------------------------------------------------------------------------------------------" << std::endl;
+
+		//for (double sleepDelta : sleepDeltas) {
+		//	std::cout << sleepDelta << " ";
+		//}
+		//std::cout << std::endl;
     }
 
     if (isShort) {

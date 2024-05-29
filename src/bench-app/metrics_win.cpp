@@ -51,6 +51,22 @@ void Metrics::sleepMs(uint32_t milliseconds)
 	Sleep(milliseconds);
 }
 
+uint64_t Metrics::getCPUTimes()
+{
+    uint64_t totalProcessTime = 0;
+
+    FILETIME ftProcCreation, ftProcExit, ftProcKernel, ftProcUser;
+
+    if (!GetProcessTimes(GetCurrentProcess(), &ftProcCreation, &ftProcExit, &ftProcKernel, &ftProcUser))
+    {
+        return -1;
+    }
+
+    totalProcessTime = addTime(ftProcKernel, ftProcUser);
+
+    return totalProcessTime / 10;
+}
+
 // Functions for CPU-usage
 double   Metrics::calculateCurrentProcessUsage()
 {
@@ -98,6 +114,8 @@ uint64_t Metrics::GetProcessTime()
 
     return totalProcessTime;
 }
+
+
 
 bool    Metrics::isEnoughTimePassed(double elapsedTimeMs)
 {

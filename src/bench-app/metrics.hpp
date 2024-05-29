@@ -31,7 +31,7 @@ private:
 private:
 	// Functions for CPU-usage
 	double   calculateCurrentProcessUsage();
-	uint64_t GetProcessTime();
+	static uint64_t GetProcessTime();
 	bool     isEnoughTimePassed(double elapsedTimeMs);
 	inline bool isFirstRun() { return (timeInfo_.lastRunTick == 0); }
 
@@ -55,6 +55,20 @@ public:
 		std::chrono::duration<double, std::milli> ms_double = endTime_ - startTime_;
 		return ms_double.count() * 1000;
 	}
+
+	double getTimeDurationMilli() const {
+		std::chrono::duration<double, std::milli> ms_double = endTime_ - startTime_;
+		return ms_double.count();
+	}
+
+	double getTimeDurationMicro() const {
+		std::chrono::duration<double, std::micro> ms_double = endTime_ - startTime_;
+		return ms_double.count();
+	}
+
+
+    static uint64_t getCPUTimes();
+
 
 	// Functions for CPU-usage measurement
 	double  getCPUUsageOnCurrentProcess();

@@ -98,6 +98,12 @@ void Metrics::sleepMs(uint32_t milliseconds)
     usleep(milliseconds * 1000);
 }
 
+
+uint64_t Metrics::getCPUTimes()
+{
+	return GetProcessTime();
+}
+
 // Functions for CPU-usage
 double   Metrics::calculateCurrentProcessUsage()
 {
