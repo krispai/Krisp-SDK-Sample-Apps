@@ -11,7 +11,7 @@ int dllFunction() {
 	std::cout << "Hello World" << std::endl;
 	krispAudioGlobalInit(nullptr);
 	krispAudioSetModel(nullptr, nullptr);
-	krispAudioNcCreateSession(KrispAudioSamplingRate(0),
+	krispAudioNcCreateSessionInt16(KrispAudioSamplingRate(0),
                           KrispAudioSamplingRate(0),
                           KrispAudioFrameDuration(10),
 						  nullptr);

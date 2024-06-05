@@ -11,7 +11,6 @@
 #include "sound_file.hpp"
 
 
-
 static int krispAudioNcCleanAmbientNoise(
 		KrispAudioSessionID pSession,
 		const short * pFrameIn,
@@ -69,12 +68,12 @@ static bool parseArguments(std::string& input, std::string& output,
 	ArgumentParser p(argc, argv);
 	p.addArgument("--input", "-i", IMPORTANT);
 	p.addArgument("--output", "-o",IMPORTANT);
-	p.addArgument("--weight_file", "-w", IMPORTANT);
+	p.addArgument("--model_path", "-m", IMPORTANT);
 	p.addArgument("--stats", "-s", OPTIONAL);
 	if (p.parse()) {
 		input = p.getArgument("-i");
 		output = p.getArgument("-o");
-		weight = p.getArgument("-w");
+		weight = p.getArgument("-m");
 		stats = p.getOptionalArgument("-s");
 	} else {
 		std::cerr << p.getError();
@@ -99,8 +98,8 @@ static std::pair<KrispAudioSamplingRate, bool> getKrispSamplingRate(unsigned rat
 	case 44100:
 		result.first = KRISP_AUDIO_SAMPLING_RATE_44100HZ;
 		break;
-	case 48000: 
-		result.first = KRISP_AUDIO_SAMPLING_RATE_48000HZ; 
+	case 48000:
+		result.first = KRISP_AUDIO_SAMPLING_RATE_48000HZ;
 		break;
 	case 88200:
 		result.first = KRISP_AUDIO_SAMPLING_RATE_88200HZ;
@@ -126,7 +125,7 @@ static void readAllFrames(const SoundFile & sndFile,
 }
 
 static std::pair<bool, std::string> WriteFramesToFile(
-	const std::string & fileName, 
+	const std::string & fileName,
 	const std::vector<int16_t> & frames,
 	unsigned samplingRate)
 {
@@ -134,7 +133,7 @@ static std::pair<bool, std::string> WriteFramesToFile(
 }
 
 static std::pair<bool, std::string> WriteFramesToFile(
-	const std::string & fileName, 
+	const std::string & fileName,
 	const std::vector<float> & frames,
 	unsigned samplingRate)
 {
@@ -162,6 +161,62 @@ static void getNcStats(KrispAudioSessionID session, KrispAudioNcStats* ncStats)
 	std::cout << "# - Talk time :   " <<
 		ncStats->voiceStats.talkTimeMs << " ms" << std::endl;
 	std::cout << "#-------------------------" << std::endl;
+}
+
+static KrispAudioSessionID krispAudioNcWithStatsCreateSession(
+    KrispAudioSamplingRate inputSampleRate,
+    KrispAudioSamplingRate outputSampleRate,
+    KrispAudioFrameDuration frameDuration,
+    const char* modelName,
+	short)
+{
+	return krispAudioNcWithStatsCreateSessionInt16(
+		inputSampleRate,
+		outputSampleRate,
+		frameDuration,
+		modelName);
+}
+
+static KrispAudioSessionID krispAudioNcWithStatsCreateSession(
+    KrispAudioSamplingRate inputSampleRate,
+    KrispAudioSamplingRate outputSampleRate,
+    KrispAudioFrameDuration frameDuration,
+    const char* modelName,
+	float)
+{
+	return krispAudioNcWithStatsCreateSessionFloat(
+		inputSampleRate,
+		outputSampleRate,
+		frameDuration,
+		modelName);
+}
+
+static KrispAudioSessionID krispAudioNcCreateSession(
+    KrispAudioSamplingRate inputSampleRate,
+    KrispAudioSamplingRate outputSampleRate,
+    KrispAudioFrameDuration frameDuration,
+    const char* modelName,
+	short)
+{
+	return krispAudioNcCreateSessionInt16(
+		inputSampleRate,
+		outputSampleRate,
+		frameDuration,
+		modelName);
+}
+
+static KrispAudioSessionID krispAudioNcCreateSession(
+    KrispAudioSamplingRate inputSampleRate,
+    KrispAudioSamplingRate outputSampleRate,
+    KrispAudioFrameDuration frameDuration,
+    const char* modelName,
+	float)
+{
+	return krispAudioNcCreateSessionFloat(
+		inputSampleRate,
+		outputSampleRate,
+		frameDuration,
+		modelName);
 }
 
 template <typename SamplingFormat>
@@ -206,11 +261,11 @@ int ncWavFileTmpl(
 		KRISP_AUDIO_FRAME_DURATION_10MS;
 	if (withStats) {
 		session = krispAudioNcWithStatsCreateSession(inRate, outRate,
-				krispFrameDuration, modelAlias.c_str());
+				krispFrameDuration, modelAlias.c_str(), SamplingFormat());
 	}
 	else {
 		session = krispAudioNcCreateSession(inRate, outRate,
-				krispFrameDuration, modelAlias.c_str());
+				krispFrameDuration, modelAlias.c_str(), SamplingFormat());
 	}
 
 
@@ -313,7 +368,7 @@ int main(int argc, char** argv) {
 		return ncWavFile(in, out, weight, stats);
 	} else {
 		std::cerr << "\nUsage:\n\t" << argv[0]
-			<< " -i input.wav -o output.wav -w weightFile" << std::endl;
+			<< " -i input.wav -o output.wav -m model_path" << std::endl;
 		if (argc == 1) {
 			return 0;
 		}

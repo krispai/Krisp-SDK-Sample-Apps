@@ -14,7 +14,7 @@ The build system and the codebase is compatible with.
 ## Build Dependencies
 The reference samples require
 * **libsndfile** library to read and write WAV files
-* Krisp SDK package with archive libraries for the noise canceling
+* Krisp SDK package with archive libraries for the noise canceling and speech to text.
 
 The following environment variables are mandatory. The name of each parameter is self-explanatory.
 * KRISP_SDK_PATH
@@ -31,10 +31,20 @@ LIBSNDFILE_INC and LIBSNDFILE_LIB directories is required by the sample-nc app f
 How to run the build
 
 ### On Mac/Linux run
+
+For Krisp NC SDK
 ```make```
 
-### On Windows run
-```make vs```
+For Krisp NC and STT SDK
+```make stt```
+
+### On Windows
+#### For Krisp NC SDK
+Run ```build-vs-solution.bat```. Open the Visual Studio Solution located in the ```vs-solution``` folder and manually build the target apps.
+
+#### For Krisp NC and STT SDK
+Run ```build-vs-solution-stt.bat```. Open the Visual Studio Solution located in the ```vs-solution``` folder and manually build the target apps.
+
 
 This will produce a Visual Studio Solution project in the **vsbuild** folder.
 
@@ -53,7 +63,7 @@ The noise cancelling app that applies Krisp NC technology on the given PCM16 wav
 * how to to get the Call Stats for the whole processed file and for the each frame, the feature is enabled with '-s' option
 
 ### Usage
-```sample-nc -i <PCM16 wav file> -o <output WAV file path> -m <path to the AI model> -s```
+```sample-nc -i <PCM16 or FLOAT32 wav file> -o <output WAV file path> -m <path to the AI model> -s```
 
 ### Test input for the sample-nc app
 [test/input/sample-nc-test.wav](test/input/sample-nc-test.wav)
@@ -65,3 +75,9 @@ The sample demonstrates how to build dynamic link library using Krisp static lib
 
 #### Where it should be useful
 Dynamic link libraries for Linux are always bound to specific GLIBC version. It means that you will not be able to use them on older Linux systems. This samples can be used to build DLL libraries for old Linux systems using Krisp static libraries.
+
+## sample-stt
+Sample app that demonstrates how to link to the Krisp SDK version 8 static libraries and use the Krisp ASR API to process PCM16 or FLOAT32 wav file to text.
+
+### Usage
+```sample-stt -i <PCM16 or FLOAT32 wav file> -o <output directory> -m <path to the ASR AI model>```

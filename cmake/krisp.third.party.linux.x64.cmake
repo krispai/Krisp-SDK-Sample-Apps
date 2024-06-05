@@ -12,19 +12,9 @@ if (NOT LIBRESAMPLE_ABSPATH)
 	message(FATAL_ERROR "Can't find libresample static library in the ${KRISP_3PARTY_LIB_DIR}")
 endif()
 
-find_library(LIBXNNPACK_ABSPATH NAMES XNNPACK PATHS ${KRISP_3PARTY_LIB_DIR} NO_DEFAULT_PATH)
-if (NOT LIBXNNPACK_ABSPATH) 
-	message(FATAL_ERROR "Can't find libXNNPACK static library in the ${KRISP_3PARTY_LIB_DIR}")
-endif()
-
-find_library(LIBCPUINFO_ABSPATH NAMES cpuinfo PATHS ${KRISP_3PARTY_LIB_DIR} NO_DEFAULT_PATH)
-if (NOT LIBCPUINFO_ABSPATH) 
-	message(FATAL_ERROR "Can't find libcpuinfo static library in the ${KRISP_3PARTY_LIB_DIR}")
-endif()
-
-find_library(LIBPTHREADPOOL_ABSPATH NAMES pthreadpool PATHS ${KRISP_3PARTY_LIB_DIR} NO_DEFAULT_PATH)
-if (NOT LIBPTHREADPOOL_ABSPATH) 
-	message(FATAL_ERROR "Can't find pthreadpool static library in the ${KRISP_3PARTY_LIB_DIR}")
+find_library(LIBOPENBLAS_ABSPATH NAMES openblas PATHS ${KRISP_3PARTY_LIB_DIR} NO_DEFAULT_PATH)
+if (NOT LIBOPENBLAS_ABSPATH) 
+	message(FATAL_ERROR "Can't find libopenblas static library in the ${KRISP_3PARTY_LIB_DIR}")
 endif()
 
 find_library(LIBFFTW3F_ABSPATH NAMES fftw3f PATHS ${KRISP_3PARTY_LIB_DIR} NO_DEFAULT_PATH)
@@ -45,17 +35,18 @@ endif()
 set(KRISP_THIRDPARTY_LIBS 
 	${LIBRESAMPLE_ABSPATH}
 	${LIBCRYPTO_ABSPATH}
-	${LIBXNNPACK_ABSPATH}
 	${LIBCPUINFO_ABSPATH}
 	${LIBPTHREADPOOL_ABSPATH}
 	${LIBFFTW3F_ABSPATH}
 	${LIBFFTW3F_THREADS_ABSPATH}
 	${LIBONNXRUNTIME_ABSPATH}
-	blas
-	lapack
+	${LIBOPENBLAS_ABSPATH}
+	${LIBFFTW3F_ABSPATH}
+	${LIBFFTW3F_THREADS_ABSPATH}
+	${LIBONNXRUNTIME_ABSPATH}
 )
 
 if (DEFINED STT)
-	include(krisp.third.party.mac.arm.stt.cmake)
+	include(krisp.third.party.linux.x64.stt.cmake)
 	set(KRISP_THIRDPARTY_LIBS ${KRISP_THIRDPARTY_LIBS} ${STT_LIBS})
 endif()

@@ -39,8 +39,10 @@ if (NOT DEFINED KRISP_SDK_PATH)
 	message(FATAL_ERROR "KRISP_SDK_PATH must be specified")
 endif()
 
-set(KRISP_INC_DIR ${KRISP_SDK_PATH}/include)                                            
+set(KRISP_INC_DIR ${KRISP_SDK_PATH}/include)
+set(KRISP_INC_LEGACY_DIR ${KRISP_SDK_PATH}/include)
 set(KRISP_LIB_DIR ${KRISP_SDK_PATH}/lib)
+set(KRISP_3PARTY_LIB_DIR ${KRISP_SDK_PATH}/external)
 
 # is needed to get ${LIBSNDFILE_ABSPATH} and ${LIBSNDFILE_INC}
 include(libsndfile.cmake)
@@ -48,12 +50,12 @@ include(libsndfile.cmake)
 # Krisp SDK libraries are applied to all targets
 include(krisp.cmake)
 
-# Libresample is required for Krisp SDK
-#include(libresample.cmake)
-
+set(APPNAME_STT sample-stt)
 set(APPNAME_NC sample-nc)
 set(DLLNAME krisp-dll)
-set(APPNAME_DLL dll-test-app)
+if (NOT WIN32)
+	set(APPNAME_DLL dll-test-app)
+endif()
 #set(APPNAME_VAD sample-vad)
 
 add_compile_definitions(KRISP_AUDIO_STATIC)
@@ -66,10 +68,12 @@ add_library(
 	${ROOT_DIR}/src/sample-dll/dll-main.cpp
 )
 
-add_executable(
-	${APPNAME_DLL}
-	${ROOT_DIR}/src/sample-dll/dll-test.cpp
-)
+if (NOT WIN32)
+	add_executable(
+		${APPNAME_DLL}
+		${ROOT_DIR}/src/sample-dll/dll-test.cpp
+	)
+endif()
 
 add_executable(
 	${APPNAME_NC} 
@@ -78,38 +82,69 @@ add_executable(
 	${ROOT_DIR}/src/utils/argument_parser.cpp
 )
 
+if (DEFINED STT)
+	add_executable(
+		${APPNAME_STT} 
+		${ROOT_DIR}/src/sample-stt/main.cpp
+		${ROOT_DIR}/src/utils/sound_file.cpp
+		${ROOT_DIR}/src/utils/argument_parser.cpp
+	)
+endif()
+
 target_include_directories(
 	${APPNAME_NC}
 	PRIVATE
 	${ROOT_DIR}/src/utils
 	${LIBSNDFILE_INC}
-	${KRISP_INC_DIR}
+	${KRISP_INC_LEGACY_DIR}
 )
+
+if (DEFINED STT)
+	target_include_directories(
+		${APPNAME_STT}
+		PRIVATE
+		${ROOT_DIR}/src/utils
+		${LIBSNDFILE_INC}
+		${KRISP_INC_LEGACY_DIR}
+	)
+endif()
 
 target_include_directories(
 	${DLLNAME}
 	PRIVATE
-	${KRISP_INC_DIR}
+	${KRISP_INC_LEGACY_DIR}
 )
 
-target_include_directories(
-	${APPNAME_DLL}
-	PRIVATE
-	${KRISP_INC_DIR}
-)
+if (NOT WIN32)
+	target_include_directories(
+		${APPNAME_DLL}
+		PRIVATE
+		${KRISP_INC_LEGACY_DIR}
+	)
+endif()
 
 target_link_libraries(
 	${APPNAME_NC}
+	${KRISP_LIBS}
 	${LIBSNDFILE_ABSPATH}
-	${KRISP_LIBS}
 )
+
+if (DEFINED STT)
+	target_link_libraries(
+		${APPNAME_STT}
+		${KRISP_LIBS}
+		${LIBSNDFILE_ABSPATH}
+	)
+endif()
 
 target_link_libraries(
 	${DLLNAME}
 	${KRISP_LIBS}
 )
 
-target_link_libraries(
-	${APPNAME_DLL}
-	${DLLNAME}
-)
+if (NOT WIN32)
+	target_link_libraries(
+		${APPNAME_DLL}
+		${DLLNAME}
+	)
+endif()
