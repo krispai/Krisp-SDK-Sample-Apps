@@ -139,7 +139,7 @@ public:
         }
         if (_remainder_sample_count)
         {
-            std::copy(frame_end_it, frame_end_it + _remainder_sample_count, _audio_data.begin());
+            std::copy(frame_end_it, frame_end_it + static_cast<long>(_remainder_sample_count), _audio_data.begin());
         }
         return processed_frames;
     }
@@ -148,7 +148,7 @@ private:
     const unsigned _frameSize = 10;
     unsigned _sampleRate;
     unsigned _channels;
-    unsigned _remainder_sample_count = 0;
+    unsigned long _remainder_sample_count = 0;
     std::vector<float> _audio_data;
     std::vector<float> _frameBuffer;
 	std::wstring _modelPath;

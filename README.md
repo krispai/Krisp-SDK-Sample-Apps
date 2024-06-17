@@ -25,6 +25,13 @@ KRISP_SDK_PATH should point to the Krisp SDK package directory.
 
 LIBSNDFILE_INC and LIBSNDFILE_LIB directories is required by the sample-nc app for the purpose of reading and writing WAV PCM-based audio files. It is not the SDK requirement.
 
+* **pybind11** library to build CPython modules using C++
+
+### On Ubuntu Linux
+```sudo apt-get install pybind11-dev```
+
+### On Mac
+```brew install pybind11```
 
 ## Build Process
 
