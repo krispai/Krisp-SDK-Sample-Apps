@@ -38,6 +38,9 @@ For Krisp NC SDK
 For Krisp NC and STT SDK
 ```make stt```
 
+For Krisp NC and AL SDK
+```make al```
+
 ### On Windows
 #### For Krisp NC SDK
 Run ```build-vs-solution.bat```. Open the Visual Studio Solution located in the ```vs-solution``` folder and manually build the target apps.
@@ -45,6 +48,8 @@ Run ```build-vs-solution.bat```. Open the Visual Studio Solution located in the 
 #### For Krisp NC and STT SDK
 Run ```build-vs-solution-stt.bat```. Open the Visual Studio Solution located in the ```vs-solution``` folder and manually build the target apps.
 
+#### For Krisp NC and STT SDK
+Run ```build-vs-solution-al.bat```. Open the Visual Studio Solution located in the ```vs-solution``` folder and manually build the target apps.
 
 This will produce a Visual Studio Solution project in the **vsbuild** folder.
 
