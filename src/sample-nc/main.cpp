@@ -184,8 +184,6 @@ int ncWavFileTmpl(
 
         for (i = 0; (i + 1) * inputFrameSize <= wavDataIn.size(); ++i)
         {
-            int result;
-
             ncSession->process(
                 &wavDataIn[i * inputFrameSize],
                 static_cast<size_t>(inputFrameSize),
