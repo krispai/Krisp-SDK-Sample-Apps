@@ -30,10 +30,12 @@ LIBSNDFILE_INC and LIBSNDFILE_LIB directories is required by the sample-nc app f
 
 ### On Ubuntu Linux
 ```sudo apt-get install pybind11-dev```
+
 ```sudo apt-get install libsndfile1-dev```
 
 ### On Mac
 ```brew install pybind11```
+
 ```brew install libsndfile```
 
 ## Build Process
