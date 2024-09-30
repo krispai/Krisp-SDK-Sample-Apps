@@ -32,13 +32,18 @@ LIBSNDFILE_INC and LIBSNDFILE_LIB directories is required by the sample-nc app f
 ```brew install libsndfile```
 
 ## Additional Build Dependencies For CPython Module
-In addition to above dependencies you will need the **pybind11** library to build CPython modules using C++.
+In addition to above dependencies you will need the **pybind11** and **NumPy** library to build
+CPython modules using C++.
 
 ### On Ubuntu Linux
 ```sudo apt-get install pybind11-dev```
 
+```pip3 install numpy```
+
 ### On Mac
 ```brew install pybind11```
+
+```pip3 install numpy```
 
 ## Build Process
 How to run the build
