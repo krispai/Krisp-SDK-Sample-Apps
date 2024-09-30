@@ -39,7 +39,7 @@ if(NOT DEFINED KRISP_SDK_PATH)
 	message(FATAL_ERROR "KRISP_SDK_PATH must be specified")
 endif()
 
-set(KRISP_INC_DIR ${KRISP_SDK_PATH}/include)                                            
+set(KRISP_INC_DIR ${KRISP_SDK_PATH}/include)
 set(KRISP_LIB_DIR ${KRISP_SDK_PATH}/lib)
 
 if(UNIX AND NOT APPLE)
@@ -58,20 +58,11 @@ include(krisp.cmake)
 set(APPNAME_NC sample-nc)
 set(DLLNAME krisp-dll)
 set(APPNAME_DLL dll-test-app)
-#set(APPNAME_VAD sample-vad)
 
 add_compile_definitions(KRISP_AUDIO_STATIC)
 if (WIN32 AND MSVC)
 	add_compile_definitions(_ITERATOR_DEBUG_LEVEL=0)
 endif()
-
-find_package(Python3 COMPONENTS Development NumPy)
-find_package(pybind11 REQUIRED)
-
-pybind11_add_module(
-	audio_processor
-	${ROOT_DIR}/src/sample-python/audio_processor.cpp
-)
 
 add_library(
 	${DLLNAME} SHARED
@@ -84,7 +75,7 @@ add_executable(
 )
 
 add_executable(
-	${APPNAME_NC} 
+	${APPNAME_NC}
 	${ROOT_DIR}/src/sample-nc/main.cpp
 	${ROOT_DIR}/src/utils/sound_file.cpp
 	${ROOT_DIR}/src/utils/argument_parser.cpp
@@ -110,12 +101,6 @@ target_include_directories(
 	${KRISP_INC_DIR}
 )
 
-target_include_directories(
-	audio_processor
-	PRIVATE
-	${KRISP_INC_DIR}
-)
-
 target_link_libraries(
 	${APPNAME_NC}
 	${LIBSNDFILE_ABSPATH}
@@ -136,8 +121,21 @@ target_link_libraries(
 	${DLLNAME}
 )
 
-target_link_libraries(
-	audio_processor
-	PRIVATE Python3::NumPy
-	${KRISP_LIBS}
-)
+if (DEFINED BUILD_PYTHON_SAMPLE AND BUILD_PYTHON_SAMPLE STREQUAL "1")
+	find_package(Python3 COMPONENTS Development NumPy)
+	find_package(pybind11 REQUIRED)
+	pybind11_add_module(
+		audio_processor
+		${ROOT_DIR}/src/sample-python/audio_processor.cpp
+	)
+	target_include_directories(
+		audio_processor
+		PRIVATE
+		${KRISP_INC_DIR}
+	)
+	target_link_libraries(
+		audio_processor
+		PRIVATE Python3::NumPy
+		${KRISP_LIBS}
+	)
+endif ()
