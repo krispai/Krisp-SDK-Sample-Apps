@@ -64,17 +64,17 @@ int error(const T& e) {
 	return 1;
 }
 
-static bool parseArguments(std::string& input, std::string& output,
-		std::string& weight, bool &stats, int argc, char** argv) {
+static bool parseArguments(std::string& input, std::string& outputPath,
+		std::string& modelPath, bool &stats, int argc, char** argv) {
 	ArgumentParser p(argc, argv);
 	p.addArgument("--input", "-i", IMPORTANT);
 	p.addArgument("--output", "-o",IMPORTANT);
-	p.addArgument("--weight_file", "-w", IMPORTANT);
+	p.addArgument("--model_path", "-m", IMPORTANT);
 	p.addArgument("--stats", "-s", OPTIONAL);
 	if (p.parse()) {
 		input = p.getArgument("-i");
-		output = p.getArgument("-o");
-		weight = p.getArgument("-w");
+		outputPath = p.getArgument("-o");
+		modelPath = p.getArgument("-m");
 		stats = p.getOptionalArgument("-s");
 	} else {
 		std::cerr << p.getError();
@@ -99,8 +99,8 @@ static std::pair<KrispAudioSamplingRate, bool> getKrispSamplingRate(unsigned rat
 	case 44100:
 		result.first = KRISP_AUDIO_SAMPLING_RATE_44100HZ;
 		break;
-	case 48000: 
-		result.first = KRISP_AUDIO_SAMPLING_RATE_48000HZ; 
+	case 48000:
+		result.first = KRISP_AUDIO_SAMPLING_RATE_48000HZ;
 		break;
 	case 88200:
 		result.first = KRISP_AUDIO_SAMPLING_RATE_88200HZ;
@@ -126,7 +126,7 @@ static void readAllFrames(const SoundFile & sndFile,
 }
 
 static std::pair<bool, std::string> WriteFramesToFile(
-	const std::string & fileName, 
+	const std::string & fileName,
 	const std::vector<int16_t> & frames,
 	unsigned samplingRate)
 {
@@ -134,7 +134,7 @@ static std::pair<bool, std::string> WriteFramesToFile(
 }
 
 static std::pair<bool, std::string> WriteFramesToFile(
-	const std::string & fileName, 
+	const std::string & fileName,
 	const std::vector<float> & frames,
 	unsigned samplingRate)
 {
@@ -167,8 +167,8 @@ static void getNcStats(KrispAudioSessionID session, KrispAudioNcStats* ncStats)
 template <typename SamplingFormat>
 int ncWavFileTmpl(
 		const SoundFile & inSndFile,
-		const std::string & output,
-		const std::string & weight,
+		const std::string & outputPath,
+		const std::string & modelPath,
 		bool withStats) {
 	std::vector<SamplingFormat> wavDataIn;
 	std::vector<SamplingFormat> wavDataOut;
@@ -195,9 +195,9 @@ int ncWavFileTmpl(
 	}
 
 	std::wstring_convert<std::codecvt_utf8<wchar_t>> wstringConverter;
-	std::wstring modelPath = wstringConverter.from_bytes(weight);
+	std::wstring modelWidePath = wstringConverter.from_bytes(modelPath);
 	std::string modelAlias = "model";
-	if (krispAudioSetModel(modelPath.c_str(), modelAlias.c_str()) != 0) {
+	if (krispAudioSetModel(modelWidePath.c_str(), modelAlias.c_str()) != 0) {
 		return error("Error loading AI model");
 	}
 
@@ -281,7 +281,7 @@ int ncWavFileTmpl(
 		return error("Error calling krispAudioGlobalDestroy");
 	}
 
-	auto pairResult = WriteFramesToFile(output, wavDataOut, samplingRate);
+	auto pairResult = WriteFramesToFile(outputPath, wavDataOut, samplingRate);
 	if (!pairResult.first) {
 		return error(pairResult.second);
 	}
@@ -289,8 +289,8 @@ int ncWavFileTmpl(
 	return 0;
 }
 
-static int ncWavFile(const std::string& input, const std::string& output,
-		const std::string& weight, bool withStats) {
+static int ncWavFile(const std::string& input, const std::string& outputPath,
+		const std::string& modelPath, bool withStats) {
 	SoundFile inSndFile;
 	inSndFile.loadHeader(input);
 	if (inSndFile.getHasError()) {
@@ -298,19 +298,19 @@ static int ncWavFile(const std::string& input, const std::string& output,
 	}
 	auto sndFileHeader = inSndFile.getHeader();
 	if (sndFileHeader.getFormat() == SoundFileFormat::PCM16) {
-		return ncWavFileTmpl<short>(inSndFile, output, weight, withStats);
+		return ncWavFileTmpl<short>(inSndFile, outputPath, modelPath, withStats);
 	}
 	if (sndFileHeader.getFormat() == SoundFileFormat::FLOAT) {
-		return ncWavFileTmpl<float>(inSndFile, output, weight, withStats);
+		return ncWavFileTmpl<float>(inSndFile, outputPath, modelPath, withStats);
 	}
 	return error("The sound file format should be PCM16 or FLOAT.");
 }
 
 int main(int argc, char** argv) {
-	std::string in, out, weight;
+	std::string in, out, modelPath;
 	bool stats = false;
-	if (parseArguments(in, out, weight, stats, argc, argv)) {
-		return ncWavFile(in, out, weight, stats);
+	if (parseArguments(in, out, modelPath, stats, argc, argv)) {
+		return ncWavFile(in, out, modelPath, stats);
 	} else {
 		std::cerr << "\nUsage:\n\t" << argv[0]
 			<< " -i input.wav -o output.wav -w weightFile" << std::endl;

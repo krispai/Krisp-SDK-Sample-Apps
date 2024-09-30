@@ -25,9 +25,27 @@ KRISP_SDK_PATH should point to the Krisp SDK package directory.
 
 LIBSNDFILE_INC and LIBSNDFILE_LIB directories is required by the sample-nc app for the purpose of reading and writing WAV PCM-based audio files. It is not the SDK requirement.
 
+### On Ubuntu Linux
+```sudo apt-get install libsndfile1-dev```
+
+### On Mac
+```brew install libsndfile```
+
+## Additional Build Dependencies For CPython Module
+In addition to above dependencies you will need the **pybind11** and **NumPy** library to build
+CPython modules using C++.
+
+### On Ubuntu Linux
+```sudo apt-get install pybind11-dev```
+
+```pip3 install numpy```
+
+### On Mac
+```brew install pybind11```
+
+```pip3 install numpy```
 
 ## Build Process
-
 How to run the build
 
 ### On Mac/Linux run
@@ -36,6 +54,11 @@ How to run the build
 ### On Windows run
 ```make vs```
 
+## Build CPython Module
+
+### On Mac/Linux run
+```make python```
+
 This will produce a Visual Studio Solution project in the **vsbuild** folder.
 
 ## Build Output
@@ -43,8 +66,8 @@ All apps will be stored inside the **bin** folder in the root directory
 
 # Apps
 ## sample-nc
-The noise cancelling app that applies Krisp NC technology on the given PCM16 wav file using given Krisp Weight file model. The app with its codebase demonstrates 
-* how to initialize Krisp SDK and how to free memory resources if you don't need to use Krisp anymore 
+The noise cancelling app that applies Krisp NC technology on the given PCM16 wav file using given Krisp Weight file model. The app with its codebase demonstrates
+* how to initialize Krisp SDK and how to free memory resources if you don't need to use Krisp anymore
 * how to load a single model
 * how to define the size of the frame to prepare the SDK for the processing of the frame sequence
 * how to process the sound frame-by-frame using Krisp
@@ -57,6 +80,13 @@ The noise cancelling app that applies Krisp NC technology on the given PCM16 wav
 
 ### Test input for the sample-nc app
 [test/input/sample-nc-test.wav](test/input/sample-nc-test.wav)
+
+## CPython Sample
+The sample imitates realtime PCM16 audio stream by reading PCM16 WAV file.
+It uses CPython based wrapper over Krisp Audio SDK to process audio data.
+The processed output is stored in the WAV file.
+
+```python3 process_wav.py -i <PCM16 wav file> -o <output WAV file path> -m <path to the AI model>```
 
 ## libkrispdll with dll-test-app
 
