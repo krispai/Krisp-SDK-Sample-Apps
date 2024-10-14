@@ -49,9 +49,6 @@ elseif(WIN32)
 	set(KRISP_LIB_DIR ${KRISP_LIB_DIR}/x64/Release)
 endif()
 
-# is needed to get ${LIBSNDFILE_ABSPATH} and ${LIBSNDFILE_INC}
-include(libsndfile.cmake)
-
 # Krisp SDK libraries are applied to all targets
 include(krisp.cmake)
 
@@ -65,26 +62,28 @@ if (WIN32 AND MSVC)
 	add_compile_definitions(_ITERATOR_DEBUG_LEVEL=0)
 endif()
 
-add_executable(
-	${APPNAME_NC}
-	${ROOT_DIR}/src/sample-nc/main.cpp
-	${ROOT_DIR}/src/utils/sound_file.cpp
-	${ROOT_DIR}/src/utils/argument_parser.cpp
-)
-
-target_include_directories(
-	${APPNAME_NC}
-	PRIVATE
-	${ROOT_DIR}/src/utils
-	${LIBSNDFILE_INC}
-	${KRISP_INC_DIR}
-)
-
-target_link_libraries(
-	${APPNAME_NC}
-	${LIBSNDFILE_ABSPATH}
-	${KRISP_LIBS}
-)
+if (DEFINED BUILD_SAMPLE_NC AND BUILD_SAMPLE_NC STREQUAL "1")
+	# is needed to get ${LIBSNDFILE_ABSPATH} and ${LIBSNDFILE_INC}
+	include(libsndfile.cmake)
+	add_executable(
+		${APPNAME_NC}
+		${ROOT_DIR}/src/sample-nc/main.cpp
+		${ROOT_DIR}/src/utils/sound_file.cpp
+		${ROOT_DIR}/src/utils/argument_parser.cpp
+	)
+	target_include_directories(
+		${APPNAME_NC}
+		PRIVATE
+		${ROOT_DIR}/src/utils
+		${LIBSNDFILE_INC}
+		${KRISP_INC_DIR}
+	)
+	target_link_libraries(
+		${APPNAME_NC}
+		${LIBSNDFILE_ABSPATH}
+		${KRISP_LIBS}
+	)
+endif ()
 
 if (DEFINED BUILD_SHARED_LIBRARY AND BUILD_SHARED_LIBRARY STREQUAL "1")
 	add_library(

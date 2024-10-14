@@ -1,12 +1,14 @@
 cmake_minimum_required(VERSION 3.24.0)
 
-target_link_libraries(
-	${APPNAME_NC}
-	"$<LINK_GROUP:RESCAN,${MKL_LIB_LIST}>"
-	pthread
-	m
-	dl
-)
+if (DEFINED BUILD_SAMPLE_NC AND BUILD_SAMPLE_NC STREQUAL "1")
+	target_link_libraries(
+		${APPNAME_NC}
+		"$<LINK_GROUP:RESCAN,${MKL_LIB_LIST}>"
+		pthread
+		m
+		dl
+	)
+endif()
 
 
 if (DEFINED BUILD_SHARED_LIBRARY AND BUILD_SHARED_LIBRARY STREQUAL "1")
