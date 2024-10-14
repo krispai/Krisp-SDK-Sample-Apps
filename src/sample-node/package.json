@@ -1,0 +1,11 @@
+{
+    "name": "sample-nodejs",
+    "version": "1.0.0",
+    "description": "Node.js sample using C++ library",
+    "main": "index.js",
+    "dependencies": {
+        "commander": "^12.1.0",
+        "node-addon-api": "^8.1.0",
+        "wavefile": "^11.0.0"
+    }
+}

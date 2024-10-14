@@ -31,7 +31,7 @@ LIBSNDFILE_INC and LIBSNDFILE_LIB directories is required by the sample-nc app f
 ### On Mac
 ```brew install libsndfile```
 
-## Additional Build Dependencies For CPython Module
+## CPython Module Dependencies
 In addition to above dependencies you will need the **pybind11** and **NumPy** library to build
 CPython modules using C++.
 
@@ -53,6 +53,24 @@ How to run the build
 
 ### On Windows run
 ```make vs```
+
+## NodeJS Module Dependencies
+**Node** v20 or above. **NAPI** Version 9.
+In addition to above depencies you will need the **npm**, and deps defined in the
+src/sample-node/package.json.
+
+The **NODE_INC** environement variable should be set to the include directory of the installed
+**Node**.
+
+On ARM based Mac with Homebrew the path could be ```/opt/homebrew/include/node```
+
+On Ubuntu Linux with nvm it could be the ```$HOME/.nvm/versions/node/v22.9.0/include/node```
+if installed locally.
+
+## Build Node Module
+
+### On Mac/Linux run
+```make node```
 
 ## Build CPython Module
 
@@ -87,6 +105,15 @@ It uses CPython based wrapper over Krisp Audio SDK to process audio data.
 The processed output is stored in the WAV file.
 
 ```python3 process_wav.py -i <PCM16 wav file> -o <output WAV file path> -m <path to the AI model>```
+
+## Node Module
+The sample imitates realtime PCM16 or FLOAT32 audio stream by reading PCM16/FLOAT32 WAV file.
+It uses Node based wrapper over Krisp Audio SDK to process audio data.  The processed output is
+stored in the WAV file.
+
+```cd src/sample-node```
+
+```node index.js -i <PCM16 wav file> -o <output WAV file path> -m <path to the AI model>```
 
 ## libkrispdll with dll-test-app
 
