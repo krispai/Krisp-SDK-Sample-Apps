@@ -17,7 +17,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if(UNIX OR APPLE)
-    add_compile_options(-Wall -Werror -pedantic)
+	add_compile_options(-Wall -Werror -pedantic -Wno-undefined-func-template)
 
     if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
         add_compile_options(-Wextra -Wconversion -Wsign-conversion)
@@ -40,9 +40,6 @@ if (NOT DEFINED KRISP_SDK_PATH)
 endif()
 
 set(KRISP_INC_DIR ${KRISP_SDK_PATH}/include)
-set(KRISP_INC_LEGACY_DIR ${KRISP_SDK_PATH}/include)
-set(KRISP_LIB_DIR ${KRISP_SDK_PATH}/lib)
-set(KRISP_3PARTY_LIB_DIR ${KRISP_SDK_PATH}/external)
 
 # is needed to get ${LIBSNDFILE_ABSPATH} and ${LIBSNDFILE_INC}
 include(libsndfile.cmake)
@@ -52,26 +49,12 @@ include(krisp.cmake)
 
 set(APPNAME_NC sample-nc)
 set(APPNAME_AL sample-al)
-set(DLLNAME krisp-dll)
-if (NOT WIN32)
-	set(APPNAME_DLL dll-test-app)
-endif()
 
-add_compile_definitions(KRISP_AUDIO_STATIC)
+if (WIN32)
+	add_compile_definitions(KRISP_AUDIO_STATIC)
+endif()
 if (WIN32 AND MSVC)
 	add_compile_definitions(_ITERATOR_DEBUG_LEVEL=0)
-endif()
-
-add_library(
-	${DLLNAME} SHARED
-	${ROOT_DIR}/src/sample-dll/dll-main.cpp
-)
-
-if (NOT WIN32)
-	add_executable(
-		${APPNAME_DLL}
-		${ROOT_DIR}/src/sample-dll/dll-test.cpp
-	)
 endif()
 
 add_executable(
@@ -95,7 +78,7 @@ target_include_directories(
 	PRIVATE
 	${ROOT_DIR}/src/utils
 	${LIBSNDFILE_INC}
-	${KRISP_INC_LEGACY_DIR}
+	${KRISP_INC_DIR}
 )
 
 if (DEFINED AL)
@@ -104,21 +87,7 @@ if (DEFINED AL)
 		PRIVATE
 		${ROOT_DIR}/src/utils
 		${LIBSNDFILE_INC}
-		${KRISP_INC_LEGACY_DIR}
-	)
-endif()
-
-target_include_directories(
-	${DLLNAME}
-	PRIVATE
-	${KRISP_INC_LEGACY_DIR}
-)
-
-if (NOT WIN32)
-	target_include_directories(
-		${APPNAME_DLL}
-		PRIVATE
-		${KRISP_INC_LEGACY_DIR}
+		${KRISP_INC_DIR}
 	)
 endif()
 
@@ -133,17 +102,5 @@ if (DEFINED AL)
 		${APPNAME_AL}
 		${KRISP_LIBS}
 		${LIBSNDFILE_ABSPATH}
-	)
-endif()
-
-target_link_libraries(
-	${DLLNAME}
-	${KRISP_LIBS}
-)
-
-if (NOT WIN32)
-	target_link_libraries(
-		${APPNAME_DLL}
-		${DLLNAME}
 	)
 endif()
