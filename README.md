@@ -35,22 +35,12 @@ How to run the build
 For Krisp NC SDK
 ```make```
 
-For Krisp NC and STT SDK
-```make stt```
-
 For Krisp NC and AL SDK
 ```make al```
 
 ### On Windows
 #### For Krisp NC SDK
 Run ```build-vs-solution.bat```. Open the Visual Studio Solution located in the ```vs-solution``` folder and manually build the target apps.
-
-#### For Krisp NC and STT SDK
-Run ```build-vs-solution-stt.bat```. Open the Visual Studio Solution located in the ```vs-solution``` folder and manually build the target apps.
-
-#### For Krisp NC and STT SDK
-Run ```build-vs-solution-al.bat```. Open the Visual Studio Solution located in the ```vs-solution``` folder and manually build the target apps.
-
 This will produce a Visual Studio Solution project in the **vsbuild** folder.
 
 ## Build Output
@@ -72,17 +62,3 @@ The noise cancelling app that applies Krisp NC technology on the given PCM16 wav
 
 ### Test input for the sample-nc app
 [test/input/sample-nc-test.wav](test/input/sample-nc-test.wav)
-
-## libkrispdll with dll-test-app
-
-### Description
-The sample demonstrates how to build dynamic link library using Krisp static libraries.
-
-#### Where it should be useful
-Dynamic link libraries for Linux are always bound to specific GLIBC version. It means that you will not be able to use them on older Linux systems. This samples can be used to build DLL libraries for old Linux systems using Krisp static libraries.
-
-## sample-stt
-Sample app that demonstrates how to link to the Krisp SDK version 8 static libraries and use the Krisp ASR API to process PCM16 or FLOAT32 wav file to text.
-
-### Usage
-```sample-stt -i <PCM16 or FLOAT32 wav file> -o <output directory> -m <path to the ASR AI model>```
