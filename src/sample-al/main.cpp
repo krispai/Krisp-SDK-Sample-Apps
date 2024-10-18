@@ -5,7 +5,7 @@
 #include <codecvt>
 
 #include <krisp-audio-sdk.hpp>
-#include <krisp-audio-sdk-nc.hpp>
+#include <krisp-audio-sdk-al.hpp>
 
 #include "argument_parser.hpp"
 #include "sound_file.hpp"
@@ -20,23 +20,19 @@ int error(const T &e)
 }
 
 static bool parseArguments(std::string &input, std::string &output,
-                           std::string &weight, float &noiseSuppressionLevel, bool &stats, int argc, char **argv)
+                           std::string &weight, std::string &voiceModel, int argc, char **argv)
 {
     ArgumentParser p(argc, argv);
     p.addArgument("--input", "-i", IMPORTANT);
     p.addArgument("--output", "-o", IMPORTANT);
     p.addArgument("--model_path", "-m", IMPORTANT);
-    p.addArgument("--suppress_level", "-sl", OPTIONAL);
-    p.addArgument("--stats", "-s", OPTIONAL);
+    p.addArgument("--voice_cfg", "-v", IMPORTANT);
     if (p.parse())
     {
         input = p.getArgument("-i");
         output = p.getArgument("-o");
         weight = p.getArgument("-m");
-        stats = p.getOptionalArgument("-s");
-
-        const auto noiseSuppressionLevelStr = p.tryGetArgument("-sl", "100.0");
-        noiseSuppressionLevel = std::stof(noiseSuppressionLevelStr);
+        voiceModel = p.getArgument("-v");
     }
     else
     {
@@ -106,29 +102,11 @@ static std::pair<bool, std::string> WriteFramesToFile(
 }
 
 template <typename SamplingFormat>
-static void getNcStats(std::shared_ptr<Nc<SamplingFormat>> ncSession)
-{
-    SessionStats ncSessionStats;
-
-    ncSession->getSessionStats(&ncSessionStats);
-
-    std::cout << "#--- Noise/Voice stats ---" << std::endl;
-    std::cout << "# - No     Noise: " << ncSessionStats.noiseStats.noNoiseMs << " ms" << std::endl;
-    std::cout << "# - Low    Noise: " << ncSessionStats.noiseStats.lowNoiseMs << " ms" << std::endl;
-    std::cout << "# - Medium Noise: " << ncSessionStats.noiseStats.mediumNoiseMs << " ms" << std::endl;
-    std::cout << "# - High   Noise: " << ncSessionStats.noiseStats.highNoiseMs << " ms" << std::endl;
-    std::cout << "#-------------------------" << std::endl;
-    std::cout << "# - Talk time :   " << ncSessionStats.voiceStats.talkTimeMs << " ms" << std::endl;
-    std::cout << "#-------------------------" << std::endl;
-}
-
-template <typename SamplingFormat>
-int ncWavFileTmpl(
+int alWavFileImpl(
     const SoundFile &inSndFile,
     const std::string &output,
     const std::string &weight,
-    float noiseSuppressionLevel,
-    bool withStats)
+    const std::string &voiceModel)
 {
     std::vector<SamplingFormat> wavDataIn;
     readAllFrames(inSndFile, wavDataIn);
@@ -157,54 +135,37 @@ int ncWavFileTmpl(
 
         std::wstring_convert<std::codecvt_utf8<wchar_t>> wstringConverter;
 
-        ModelInfo ncModelInfo;
-        ncModelInfo.path = wstringConverter.from_bytes(weight);
+        ModelInfo alBaseModelInfo;
+        ModelInfo alVoiceModelInfo;
+        alBaseModelInfo.path = wstringConverter.from_bytes(weight);
+        alVoiceModelInfo.path = wstringConverter.from_bytes(voiceModel);
 
-        NcSessionConfig ncCfg =
+        AlSessionConfig alCfg =
             {
                 inRate,
                 frameDurationMillis,
                 outRate,
-                &ncModelInfo,
-                withStats,
-                nullptr // Ringtone model cfg for inbound
+                &alBaseModelInfo,
+                &alVoiceModelInfo
             };
 
-        std::shared_ptr<Nc<SamplingFormat>> ncSession = Nc<SamplingFormat>::create(ncCfg);
+        std::shared_ptr<Al<SamplingFormat>> alSession = Al<SamplingFormat>::create(alCfg);
 
         //
         // End of the SDK initialization
         // Start of the Stream's frame by frame processing
         //
 
-        PerFrameStats perFrameStats;
-
         std::vector<SamplingFormat> wavDataOut(wavDataIn.size() * outputFrameSize / inputFrameSize);
         size_t i;
 
         for (i = 0; (i + 1) * inputFrameSize <= wavDataIn.size(); ++i)
         {
-            ncSession->process(
+            alSession->process(
                 &wavDataIn[i * inputFrameSize],
                 static_cast<size_t>(inputFrameSize),
                 &wavDataOut[i * outputFrameSize],
-                static_cast<size_t>(outputFrameSize),
-                noiseSuppressionLevel,
-                withStats ? &perFrameStats : nullptr);
-
-            if (withStats)
-            {
-                std::cout << "[" << i + 1 << " x " << static_cast<uint64_t>(frameDurationMillis) << "ms]"
-                          << " noiseEn: " << perFrameStats.energy.noiseEnergy
-                          << ", voiceEn: " << perFrameStats.energy.voiceEnergy << std::endl;
-
-                if (withStats && i % 100 == 0)
-                {
-                    // Get NC session stats in the middle of the processing
-                    // calculated from the start of the session processing
-                    getNcStats(ncSession);
-                }
-            }
+                static_cast<size_t>(outputFrameSize));
         }
 
         //
@@ -212,18 +173,12 @@ int ncWavFileTmpl(
         // Finalizing and closing the SDK
         //
 
-        if (withStats)
-        {
-            std::cout << "Getting Final NC session stats..." << std::endl;
-            getNcStats(ncSession);
-        }
-
-        // ncSession is a shared_ptr. Need to make sure to free pointer before calling globalDestroy()
-        ncSession.reset();
+        // alSession is a shared_ptr. Need to make sure to free pointer before calling globalDestroy()
+        alSession.reset();
         globalDestroy();
 
         // Write the output to the file
-        // wavDataOut.resize(i * outputFrameSize);
+        //wavDataOut.resize(i * outputFrameSize);
         auto pairResult = WriteFramesToFile(output, wavDataOut, samplingRate);
         if (!pairResult.first)
         {
@@ -242,8 +197,8 @@ int ncWavFileTmpl(
     return 0;
 }
 
-static int ncWavFile(const std::string &input, const std::string &output,
-                     const std::string &weight, float noiseSuppressionLevel, bool withStats)
+static int alWavFile(const std::string &input, const std::string &output,
+                     const std::string &weight, const std::string &voiceModel)
 {
     SoundFile inSndFile;
     inSndFile.loadHeader(input);
@@ -254,11 +209,11 @@ static int ncWavFile(const std::string &input, const std::string &output,
     auto sndFileHeader = inSndFile.getHeader();
     if (sndFileHeader.getFormat() == SoundFileFormat::PCM16)
     {
-        return ncWavFileTmpl<int16_t>(inSndFile, output, weight, noiseSuppressionLevel, withStats);
+        return alWavFileImpl<int16_t>(inSndFile, output, weight, voiceModel);
     }
     if (sndFileHeader.getFormat() == SoundFileFormat::FLOAT)
     {
-        return ncWavFileTmpl<float>(inSndFile, output, weight, noiseSuppressionLevel, withStats);
+        return alWavFileImpl<float>(inSndFile, output, weight, voiceModel);
     }
     return error("The sound file format should be PCM16 or FLOAT.");
 }
@@ -268,12 +223,11 @@ int main(int argc, char **argv)
     std::string in;
     std::string out;
     std::string weight;
-    float noiseSuppressionLevel = 100;
-    bool stats = false;
-
-    if (parseArguments(in, out, weight, noiseSuppressionLevel, stats, argc, argv))
+    std::string voiceModel;
+    
+    if (parseArguments(in, out, weight, voiceModel, argc, argv))
     {
-        return ncWavFile(in, out, weight, noiseSuppressionLevel, stats);
+        return alWavFile(in, out, weight, voiceModel);
     }
     else
     {

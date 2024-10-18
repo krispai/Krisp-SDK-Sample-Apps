@@ -40,7 +40,6 @@ class SoundFile {
 private:
 	SNDFILE* m_sfHandle;
 	SoundFileHeader m_sfHeader;
-
 	mutable bool m_hasError;
 	mutable std::string m_errorMsg;
 

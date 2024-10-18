@@ -121,7 +121,7 @@ std::pair<bool, std::string> writeFramesTmpl(
 			"Error open file for writing: " + fileName); 
 	}
 	sf_write(sfHandle, const_cast<SamplingFormat *>(frames.data()),
-		static_cast<long long>(frames.size()));
+		static_cast<int64_t>(frames.size()));
 	sf_write_sync(sfHandle);
 	sf_close(sfHandle);
 	return std::pair<bool, std::string>(true, "");
