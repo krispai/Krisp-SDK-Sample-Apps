@@ -10,7 +10,16 @@
 #include "argument_parser.hpp"
 #include "sound_file.hpp"
 
-using namespace Krisp::AudioSdk;
+
+using Krisp::AudioSdk::NcSessionConfig;
+using Krisp::AudioSdk::Nc;
+using Krisp::AudioSdk::ModelInfo;
+using Krisp::AudioSdk::FrameDuration;
+using Krisp::AudioSdk::SamplingRate;
+using Krisp::AudioSdk::globalInit;
+using Krisp::AudioSdk::globalDestroy;
+using Krisp::AudioSdk::PerFrameStats;
+using Krisp::AudioSdk::SessionStats;
 
 template <typename T>
 int error(const T &e)
