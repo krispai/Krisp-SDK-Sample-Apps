@@ -33,7 +33,7 @@ build:
 		-D BUILD_PYTHON_SAMPLE=$(BUILD_SAMPLE_PYTHON) 
 	${MAKE} -C build VERBOSE=1
 	@if [ "$(BUILD_SAMPLE_PYTHON)" -eq "1" ]; then \
-		cp src/sample-python/process_wav.py bin/; \
+		cp ./src/sample-python/process_wav.py bin/; \
 	fi
 
 run:

@@ -52,10 +52,11 @@ static std::pair<SamplingRate, bool> getKrispSamplingRate(uint32_t rate)
 
 namespace py = pybind11;
 
-class KrispAudioProcessor
+template <typename SamplingFormat>
+class KrispAudioProcessorTemplate
 {
 public:
-    KrispAudioProcessor(unsigned sampleRate, const std::wstring & modelPath) : _sampleRate(sampleRate),
+    KrispAudioProcessorTemplate(unsigned sampleRate, const std::wstring & modelPath) : _sampleRate(sampleRate),
         _channels(1), _modelPath(modelPath)
     {
         _ncModelInfo.path = modelPath;
@@ -65,7 +66,7 @@ public:
         _frameBuffer.resize(frameLength);
     }
 
-	~KrispAudioProcessor()
+	~KrispAudioProcessorTemplate()
 	{
 	}
 
@@ -84,15 +85,15 @@ public:
         _ncSession = Nc<SamplingFormat>::create(_ncCfg);
 	}
 
-    void store_audio_chunk(const py::array_t<float>& audio_chunk)
+    void store_audio_chunk(const py::array_t<SamplingFormat>& audio_chunk)
     {
         py::buffer_info info = audio_chunk.request();
-        const float* chunk_ptr = static_cast<float*>(info.ptr);
+        const SamplingFormat* chunk_ptr = static_cast<SamplingFormat*>(info.ptr);
         size_t chunk_size = static_cast<size_t>(info.size);
         _audio_data.resize(chunk_size + _remainderSampleCount);
-        std::memcpy(_audio_data.data() + _remainderSampleCount * sizeof(float),
+        std::memcpy(_audio_data.data() + _remainderSampleCount * sizeof(SamplingFormat),
             static_cast<const void *>(chunk_ptr),
-            chunk_size * sizeof(float));
+            chunk_size * sizeof(SamplingFormat));
         _remainderSampleCount = 0;
     }
 
@@ -101,13 +102,13 @@ public:
         return _audio_data.size();
     }
 
-    unsigned get_processed_frames(py::array_t<float>& python_output_frames)
+    unsigned get_processed_frames(py::array_t<SamplingFormat>& python_output_frames)
     {
         unsigned samplesPerFrame = (_sampleRate * _frameSize) / 1000;
         unsigned frameLength = samplesPerFrame * _channels;
 
         py::buffer_info buf_info = python_output_frames.request();
-        float* output_ptr = static_cast<float*>(buf_info.ptr);
+        SamplingFormat* output_ptr = static_cast<SamplingFormat*>(buf_info.ptr);
         size_t buffer_frame_count = static_cast<size_t>(buf_info.size) / frameLength;
         size_t audio_frame_count = _audio_data.size() / frameLength;
         if (buffer_frame_count < audio_frame_count)
@@ -147,13 +148,12 @@ private:
     unsigned _sampleRate;
     unsigned _channels;
     unsigned long _remainderSampleCount = 0;
-    std::vector<float> _audio_data;
-    std::vector<float> _frameBuffer;
+    std::vector<SamplingFormat> _audio_data;
+    std::vector<SamplingFormat> _frameBuffer;
 	std::wstring _modelPath;
 
     ModelInfo _ncModelInfo;
     NcSessionConfig _ncCfg;
-    typedef float SamplingFormat;
     std::shared_ptr<Nc<SamplingFormat>> _ncSession;
 };
 
@@ -166,15 +166,22 @@ static void module_destructor(PyObject *) {
     globalDestroy();
 }
 
+typedef KrispAudioProcessorTemplate<float> KrispAudioProcessorPcmFloat;
+typedef KrispAudioProcessorTemplate<int16_t> KrispAudioProcessorPcm16;
+
 PYBIND11_MODULE(krisp_module, m)
 {
     module_constructor();
-    py::class_<KrispAudioProcessor>(m, "KrispAudioProcessor")
+    py::class_<KrispAudioProcessorPcmFloat>(m, "KrispAudioProcessorPcmFloat")
         .def(py::init<unsigned, std::wstring>())
-        .def("store_audio_chunk", &KrispAudioProcessor::store_audio_chunk)
-        .def("get_processed_frames", &KrispAudioProcessor::get_processed_frames)
-        .def("get_samples_count", &KrispAudioProcessor::get_samples_count);
-
+        .def("store_audio_chunk", &KrispAudioProcessorPcmFloat::store_audio_chunk)
+        .def("get_processed_frames", &KrispAudioProcessorPcmFloat::get_processed_frames)
+        .def("get_samples_count", &KrispAudioProcessorPcmFloat::get_samples_count);
+    py::class_<KrispAudioProcessorPcm16>(m, "KrispAudioProcessorPcm16")
+        .def(py::init<unsigned, std::wstring>())
+        .def("store_audio_chunk", &KrispAudioProcessorPcm16::store_audio_chunk)
+        .def("get_processed_frames", &KrispAudioProcessorPcm16::get_processed_frames)
+        .def("get_samples_count", &KrispAudioProcessorPcm16::get_samples_count);
     static int dummy;
     m.add_object("_cleanup", py::capsule(&dummy, [](PyObject *) {
         module_destructor(nullptr);
