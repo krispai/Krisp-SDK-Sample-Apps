@@ -23,9 +23,6 @@ class KrispAudioProcessor : public Napi::ObjectWrap<KrispAudioProcessor<SampleTy
 public:
 	~KrispAudioProcessor() override {
 	}
-    //friend Napi::Object Init(Napi::Env env, Napi::Object exports);
-	//typedef KrispAudioProcessor<float> KrispAudioProcessorPcmFloat;
-	//typedef KrispAudioProcessor<int16_t> KrispAudioProcessorPcm16;
 
 	static Napi::Object Init(Napi::Env env, Napi::Object exports, const char * nodeClassName) {
 		Napi::Function func = Napi::ObjectWrap<KrispAudioProcessor<SampleType>>::DefineClass(env, nodeClassName, {
