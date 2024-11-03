@@ -7,7 +7,7 @@ endif()
 project("Krisp SDK Sample Apps")
 
 # Set 'Release' or 'Debug'
-set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_BUILD_TYPE Release)
 
 get_filename_component(ROOT_DIR ${PROJECT_SOURCE_DIR} DIRECTORY)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${ROOT_DIR}/bin)
@@ -98,7 +98,7 @@ if (DEFINED BUILD_SAMPLE_AL AND BUILD_SAMPLE_AL STREQUAL "1")
 	)
 endif ()
 
-if (DEFINED BUILD_PYTHON_SAMPLE AND BUILD_PYTHON_SAMPLE STREQUAL "1")
+if (DEFINED BUILD_SAMPLE_PYTHON AND BUILD_SAMPLE_PYTHON STREQUAL "1")
 	find_package(Python3 COMPONENTS Development NumPy)
 	find_package(pybind11 REQUIRED)
 	set(PYMODNAME_NC krisp_module)
@@ -117,3 +117,57 @@ if (DEFINED BUILD_PYTHON_SAMPLE AND BUILD_PYTHON_SAMPLE STREQUAL "1")
 		${KRISP_LIBS}
 	)
 endif ()
+
+if (DEFINED BUILD_SAMPLE_NODEJS AND BUILD_SAMPLE_NODEJS STREQUAL "1")
+	if (NOT NODE_INC OR NODE_INC STREQUAL "")
+		message(FATAL_ERROR "the NODE_INC is not set.")
+	endif()
+	set(NODEJS_SAMPLE_DIR ${ROOT_DIR}/src/sample-node)
+	execute_process(
+		COMMAND npm install
+		WORKING_DIRECTORY ${NODEJS_SAMPLE_DIR}
+		RESULT_VARIABLE NPM_INSTALL_RESULT
+		ERROR_VARIABLE NPM_INSTALL_ERROR
+	)
+	if (NOT NPM_INSTALL_RESULT EQUAL 0)
+		message(FATAL_ERROR "npm install failed with error: ${NPM_INSTALL_ERROR}")
+	endif()
+	execute_process(
+		COMMAND node -p "require('node-addon-api').include"
+		WORKING_DIRECTORY ${NODEJS_SAMPLE_DIR}
+		OUTPUT_VARIABLE NODE_ADDON_API_DIR
+		RESULT_VARIABLE NODE_ADDON_API_RESULT
+		ERROR_VARIABLE NODE_ADDON_API_ERROR
+		OUTPUT_STRIP_TRAILING_WHITESPACE
+	)
+	string(STRIP "${NODE_ADDON_API_DIR}" NODE_ADDON_API_DIR)
+	string(REPLACE "\"" "" NODE_ADDON_API_DIR "${NODE_ADDON_API_DIR}")
+	if (NOT NODE_ADDON_API_RESULT EQUAL 0 OR NODE_ADDON_API_DIR STREQUAL "")
+		message(FATAL_ERROR "Failed to retrieve node-addon-api include directory: ${NODE_ADDON_API_ERROR}")
+	endif()
+	add_definitions(-DNAPI_VERSION=9)
+	set(NODEMODNAME_NC nodejs-module)
+	add_library(${NODEMODNAME_NC} SHARED ${ROOT_DIR}/src/sample-node/addon.cpp)
+	if (APPLE)
+		set_target_properties(
+			${NODEMODNAME_NC} PROPERTIES
+			LINK_FLAGS "-undefined dynamic_lookup"
+		)
+	endif()
+	target_link_libraries(${NODEMODNAME_NC} PRIVATE ${KRISP_LIBS})
+	target_include_directories(
+		${NODEMODNAME_NC}
+		PRIVATE
+		${NODE_INC}
+		${NODE_ADDON_API_DIR}
+		${KRISP_INC_DIR}
+	)
+	set_target_properties(
+		${NODEMODNAME_NC} PROPERTIES
+		PREFIX ""
+		SUFFIX ".node"
+        RUNTIME_OUTPUT_DIRECTORY ${NODEJS_SAMPLE_DIR}
+		LIBRARY_OUTPUT_DIRECTORY_DEBUG "${NODEJS_SAMPLE_DIR}"
+		LIBRARY_OUTPUT_DIRECTORY_RELEASE "${NODEJS_SAMPLE_DIR}"
+	)
+endif()
