@@ -99,7 +99,10 @@ if (DEFINED BUILD_SAMPLE_AL AND BUILD_SAMPLE_AL STREQUAL "1")
 endif ()
 
 if (DEFINED BUILD_SAMPLE_PYTHON AND BUILD_SAMPLE_PYTHON STREQUAL "1")
-	find_package(Python3 COMPONENTS Development NumPy)
+	if (DEFINED PYTHON3_PATH AND NOT "PYTHON3_PATH" STREQUAL "")
+		set(Python3_EXECUTABLE "${PYTHON3_PATH}")
+	endif()
+	find_package(Python3 REQUIRED COMPONENTS Development NumPy)
 	find_package(pybind11 REQUIRED)
 	set(PYMODNAME_NC krisp_module)
 	pybind11_add_module(
