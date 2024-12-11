@@ -102,7 +102,7 @@ public:
         return _audio_data.size();
     }
 
-    unsigned get_processed_frames(py::array_t<SamplingFormat>& python_output_frames)
+    unsigned get_processed_frames(py::array_t<SamplingFormat>& python_output_frames, unsigned nc_aggr)
     {
         unsigned samplesPerFrame = (_sampleRate * _frameSize) / 1000;
         unsigned frameLength = samplesPerFrame * _channels;
@@ -120,7 +120,7 @@ public:
         unsigned processed_frames = 0;
         auto frame_start_it = _audio_data.begin();
         auto frame_end_it = _audio_data.begin();
-        const float noiseSuppressionLevel = 100.0;
+        const float noiseSuppressionLevel = static_cast<float>(nc_aggr);
         for (unsigned i = 0; i < audio_frame_count; ++i)
         {
             std::advance(frame_end_it, frameLength);

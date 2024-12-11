@@ -23,18 +23,18 @@ class AudioProcessorWrapper:
     def store_audio_chunk(self, audio_chunk):
         self.processor.store_audio_chunk(audio_chunk)
 
-    def get_processed_frames(self):
+    def get_processed_frames(self, nc_aggr):
         frame_size_ms = 10
         samples_per_frame = (self.sample_rate * frame_size_ms) // 1000
         samples_count = self.processor.get_samples_count()
         frame_count = samples_count // (samples_per_frame * self.__channels)
         output_shape = (frame_count, samples_per_frame, self.__channels)
         output_frames = np.zeros(output_shape, dtype=self.__data_type)
-        num_of_frames = self.processor.get_processed_frames(output_frames)
+        num_of_frames = self.processor.get_processed_frames(output_frames, nc_aggr)
         return output_frames[:(num_of_frames * samples_per_frame * self.__channels)]
 
 
-def simulate_audio_stream(file_path, output_file_path, chunk_size_ms, model_path):
+def simulate_audio_stream(file_path, output_file_path, chunk_size_ms, model_path, nc_aggr):
     with sf.SoundFile(file_path) as inputFile:
         sample_rate = inputFile.samplerate
         sample_type = inputFile.subtype
@@ -55,7 +55,7 @@ def simulate_audio_stream(file_path, output_file_path, chunk_size_ms, model_path
             end = min(start + chunk_size_samples, num_samples)
             audio_chunk = audio_data[start:end]
             ap_wrapper.store_audio_chunk(audio_chunk)
-            frames = ap_wrapper.get_processed_frames()
+            frames = ap_wrapper.get_processed_frames(nc_aggr)
             all_frames.extend(frames)
         if all_frames:
             all_frames = np.concatenate(all_frames, axis=0)
@@ -68,12 +68,20 @@ def get_command_line_arguments():
     parser.add_argument("-i", "--input", type=str, required=True, help="Input WAV file path.")
     parser.add_argument("-o", "--output", type=str, required=True, help="Output WAV file path.")
     parser.add_argument("-m", "--model", type=str, required=True, help="Path to the AI model.")
+    parser.add_argument("-a", "--aggr", type=str, required=False, help="NC aggresiveness, integers from 1-100.")
     return parser.parse_args()
 
 def _entry():
     args = get_command_line_arguments()
+    if not args.aggr:
+        nc_aggr = 100
+    else:
+        nc_aggr = int(args.aggr)
+    if not (nc_aggr > 0 and nc_aggr <= 100):
+        print("-a parameter is out of range")
+        sys.exit(1)
     try:
-        simulate_audio_stream(args.input, args.output, 20, args.model)
+        simulate_audio_stream(args.input, args.output, 20, args.model, nc_aggr)
     except Exception as e:
         print(e)
         sys.exit(1)
