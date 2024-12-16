@@ -76,23 +76,23 @@ if (DEFINED BUILD_SAMPLE_NC AND BUILD_SAMPLE_NC STREQUAL "1")
 endif ()
 
 if (DEFINED BUILD_SAMPLE_AL AND BUILD_SAMPLE_AL STREQUAL "1")
-	set(APPNAME_AL sample-al)
+	set(APPNAME_AR sample-ar)
 	include(libsndfile.cmake)
 	add_executable(
-		${APPNAME_AL} 
-		${ROOT_DIR}/src/sample-al/main.cpp
+		${APPNAME_AR} 
+		${ROOT_DIR}/src/sample-ar/main.cpp
 		${ROOT_DIR}/src/utils/sound_file.cpp
 		${ROOT_DIR}/src/utils/argument_parser.cpp
 	)
 	target_include_directories(
-		${APPNAME_AL}
+		${APPNAME_AR}
 		PRIVATE
 		${ROOT_DIR}/src/utils
 		${LIBSNDFILE_INC}
 		${KRISP_INC_DIR}
 	)
 	target_link_libraries(
-		${APPNAME_AL}
+		${APPNAME_AR}
 		${KRISP_LIBS}
 		${LIBSNDFILE_ABSPATH}
 	)
