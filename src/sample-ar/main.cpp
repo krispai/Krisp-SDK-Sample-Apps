@@ -1,10 +1,8 @@
-#define _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS
-
+#include <codecvt>
 #include <iostream>
+#include <locale>
 #include <string>
 #include <vector>
-#include <locale>
-#include <codecvt>
 
 #include <krisp-audio-sdk.hpp>
 #include <krisp-audio-sdk-ar.hpp>
@@ -17,11 +15,14 @@ using namespace Krisp::AudioSdk;
 namespace
 {
     // After enroll store the voice info for the specified user to use it later for AR processing
-    VoiceInfo voiceInfo;
+    VoiceInfo _voiceInfo;
+
+    // Store the enroll progress to check if the enrollment is completed
+    // It can be used to draw the progress bar in the UI
+    uint16_t _enrollProgress = 0;
 }
 
-static bool parseArguments(std::string &input, std::string &output,
-                           std::string &weight, int argc, char **argv)
+static bool parseArguments(std::string &input, std::string &output, std::string &weight, int argc, char **argv)
 {
     ArgumentParser p(argc, argv);
     p.addArgument("--input", "-i", IMPORTANT);
@@ -41,27 +42,26 @@ static bool parseArguments(std::string &input, std::string &output,
     return true;
 }
 
-void arEnrollResultCb(const VoiceInfo& vInfo, uint16_t enrollProgress)
+void arEnrollResultCb(const VoiceInfo& voiceInfo, uint16_t enrollProgress)
 {
     std::cout << enrollProgress << std::endl;
 
     if (100 == enrollProgress)
     {
-        if (vInfo.embedding.empty())
+        if (voiceInfo.embedding.empty())
         {
             throw std::logic_error("Voice embedding is empty");
         }
 
-        voiceInfo.embedding = vInfo.embedding;
+        _voiceInfo.embedding = voiceInfo.embedding;
+        _enrollProgress = enrollProgress;
     }
 }
 
 template <typename SamplingFormat>
-int arEnrollWavFileImpl(
-    const SoundFile &inSndFile,
-    const std::string &weight,
-    VoiceInfo &voiceInfo)
+int arEnrollWavFileImpl(const SoundFile &inSndFile, const std::string &weight, VoiceInfo &voiceInfo)
 {
+    // Prepare the input data from the .wav file
     std::vector<SamplingFormat> wavDataIn;
     readAllFrames(inSndFile, wavDataIn);
 
@@ -77,15 +77,13 @@ int arEnrollWavFileImpl(
         return error("Unsupported sample rate");
     }
 
+    // Prepare AR Enroll session configuration
+    ModelInfo arModelInfo;
     SamplingRate inRate = samplingRateResult.first;
     const SamplingRate outRate = inRate;
     constexpr FrameDuration frameDurationMillis = FrameDuration::Fd10ms;
     size_t inputFrameSize = (samplingRate * static_cast<size_t>(frameDurationMillis)) / 1000;
-    size_t outputFrameSize = inputFrameSize;
-
     std::wstring_convert<std::codecvt_utf8<wchar_t>> wstringConverter;
-
-    ModelInfo arModelInfo;
     arModelInfo.path = wstringConverter.from_bytes(weight);
 
     ArEnrollSessionConfig arEnrollCfg =
@@ -102,23 +100,23 @@ int arEnrollWavFileImpl(
         return error("Failed to create AR enrollment session");
     }
 
-    //
     // Start of the Stream's frame by frame processing
-    //
-
-    size_t i;
-    for (i = 0; (i + 1) * inputFrameSize <= wavDataIn.size(); ++i)
+    for (size_t i = 0; (i + 1) * inputFrameSize <= wavDataIn.size(); ++i)
     {
+        // Once done with enrollment, break the loop.
+        // No need to process further, enough voice data is processed.
+        if (_enrollProgress == 100)
+        {
+            break;
+        }
+
         arEnrollSession->process(&wavDataIn[i * inputFrameSize], static_cast<size_t>(inputFrameSize));
     }
-
-    //
     // End of the Stream's frame by frame processing
-    //
 
-    // // arSession is a shared_ptr. Need to make sure to free pointer before calling globalDestroy()
-    // arEnrollSession.reset();
-
+    // Note: arEnrollSession is a shared_ptr, but need to make sure to free pointer before calling globalDestroy().
+    // Here it is not required as we are calling globalDestroy() out of this function so before that call 
+    // the arEnrollSession will be out of the scope and it will be freed automatically.
     return 0;    
 }
 
@@ -129,6 +127,7 @@ int arProcessWavFileImpl(
     const std::string &weight,
     const VoiceInfo &voiceInfo)
 {
+    // Prepare the input data from the .wav file
     std::vector<SamplingFormat> wavDataIn;
     readAllFrames(inSndFile, wavDataIn);
 
@@ -144,15 +143,14 @@ int arProcessWavFileImpl(
         return error("Unsupported sample rate");
     }
 
+    // Prepare AR Enroll session configuration
+    ModelInfo arModelInfo;
     SamplingRate inRate = samplingRateResult.first;
     const SamplingRate outRate = inRate;
     constexpr FrameDuration frameDurationMillis = FrameDuration::Fd10ms;
     size_t inputFrameSize = (samplingRate * static_cast<size_t>(frameDurationMillis)) / 1000;
     size_t outputFrameSize = inputFrameSize;
-
     std::wstring_convert<std::codecvt_utf8<wchar_t>> wstringConverter;
-
-    ModelInfo arModelInfo;
     arModelInfo.path = wstringConverter.from_bytes(weight);
 
     ArSessionConfig arCfg =
@@ -170,13 +168,10 @@ int arProcessWavFileImpl(
         return error("Failed to create AR session");
     }
 
-    //
-    // Start of the Stream's frame by frame processing
-    //
 
+    // Start of the Stream's frame by frame processing
     std::vector<SamplingFormat> wavDataOut(wavDataIn.size() * outputFrameSize / inputFrameSize);
-    size_t i;
-    for (i = 0; (i + 1) * inputFrameSize <= wavDataIn.size(); ++i)
+    for (size_t i = 0; (i + 1) * inputFrameSize <= wavDataIn.size(); ++i)
     {
         arSession->process(
             &wavDataIn[i * inputFrameSize],
@@ -184,13 +179,7 @@ int arProcessWavFileImpl(
             &wavDataOut[i * outputFrameSize],
             static_cast<size_t>(outputFrameSize));
     }
-
-    //
-    // Finalizing and closing the SDK
-    //
-
-    // // arSession is a shared_ptr. Need to make sure to free pointer before calling globalDestroy()
-    // arSession.reset();
+    // End of the Stream's frame by frame processing
 
     // Write the output to the file
     // wavDataOut.resize(i * outputFrameSize);
@@ -200,12 +189,16 @@ int arProcessWavFileImpl(
         return error(pairResult.second);
     }
 
+    // Note: arSession is a shared_ptr, but need to make sure to free pointer before calling globalDestroy().
+    // Here it is not required as we are calling globalDestroy() out of this function so before that call 
+    // the arSession will be out of the scope and it will be freed automatically.
     return 0;
 }
 
 static int arEnrollWavFile(const std::string &input, const std::string &weight)
 {
     SoundFile inSndFile;
+
     inSndFile.loadHeader(input);
     if (inSndFile.getHasError())
     {
@@ -215,12 +208,12 @@ static int arEnrollWavFile(const std::string &input, const std::string &weight)
     auto sndFileHeader = inSndFile.getHeader();
     if (sndFileHeader.getFormat() == SoundFileFormat::PCM16)
     {
-        return arEnrollWavFileImpl<int16_t>(inSndFile, weight, voiceInfo);
+        return arEnrollWavFileImpl<int16_t>(inSndFile, weight, _voiceInfo);
     }
 
     if (sndFileHeader.getFormat() == SoundFileFormat::FLOAT)
     {
-        return arEnrollWavFileImpl<float>(inSndFile, weight, voiceInfo);
+        return arEnrollWavFileImpl<float>(inSndFile, weight, _voiceInfo);
     }
 
     return error("The sound file format should be PCM16 or FLOAT.");
@@ -230,6 +223,7 @@ static int arProcessWavFile(const std::string &input, const std::string &output,
                             const std::string &weight, const VoiceInfo &voiceInfo)
 {
     SoundFile inSndFile;
+
     inSndFile.loadHeader(input);
     if (inSndFile.getHasError())
     {
@@ -262,16 +256,19 @@ int main(int argc, char **argv)
     if (!parseArguments(in, out, weight, argc, argv))
     {
         std::cerr << "\nUsage:\n\t" << argv[0] << " -i input.wav -o output.wav -m model_path" << std::endl;
-        return 1;
+        return -1;
     }
 
     try
     {
+        // Call once to initialize the SDK
         globalInit(L"");
 
         std::cout << "Running AR Enroll" << std::endl;
 
-        // Enroll to get voice info of the speaker
+        // Here as a sample code we are enrolling the same audio to retrieve speacker voice info.
+        // In real world scenario, enroll operation should be done only once per speaker.
+        // Afterwards the voice info can be used for AR processing.
         ret = arEnrollWavFile(in, weight);
         if (ret != 0)
         {
@@ -280,10 +277,9 @@ int main(int argc, char **argv)
         }
         std::cout << "Enrollment successful!!!" << std::endl;
 
+        // AR process the audio file using voice info retrieved during enrollment
         std::cout << "Running AR Process" << std::endl;
-
-        // Process the audio file using voice info retrieved during enrollment
-        ret = arProcessWavFile(in, out, weight, voiceInfo);
+        ret = arProcessWavFile(in, out, weight, _voiceInfo);
         if (ret != 0)
         {
             std::cerr << "AR processing failed" << std::endl;
@@ -291,6 +287,7 @@ int main(int argc, char **argv)
         }
         std::cout << "AR processing successful!!!" << std::endl;
 
+        // Call once to deinitialize the SDK
         globalDestroy();
     }
     catch (const std::exception &ex)

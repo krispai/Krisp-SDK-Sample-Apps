@@ -46,6 +46,7 @@ include(krisp.cmake)
 
 if (WIN32)
 	add_compile_definitions(KRISP_AUDIO_STATIC)
+	add_definitions(-D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS)
 endif()
 if (WIN32 AND MSVC)
 	add_compile_definitions(_ITERATOR_DEBUG_LEVEL=0)
