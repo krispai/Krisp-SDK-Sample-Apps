@@ -1,5 +1,5 @@
 BUILD_SAMPLE_NC := 0
-BUILD_SAMPLE_AL := 0
+BUILD_SAMPLE_AR := 0
 BUILD_SAMPLE_PYTHON := 0
 BUILD_SAMPLE_NODEJS := 0
 
@@ -8,7 +8,7 @@ ifneq ($(filter nc,$(MAKECMDGOALS)),)
 endif
 
 ifneq ($(filter al,$(MAKECMDGOALS)),)
-	BUILD_SAMPLE_AL := 1
+	BUILD_SAMPLE_AR := 1
 endif
 
 ifneq ($(filter python,$(MAKECMDGOALS)),)
@@ -19,11 +19,11 @@ ifneq ($(filter node,$(MAKECMDGOALS)),)
 	BUILD_SAMPLE_NODEJS := 1
 endif
 
-.PHONY: nc al python build run clean node
+.PHONY: nc ar python build run clean node
 
 nc: build
 
-al: build
+ar: build
 
 python: build
 
