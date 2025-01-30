@@ -7,10 +7,19 @@ import audio_processor
 
 
 class AudioProcessorWrapper:
-    def __init__(self, sample_rate, channels, model_path):
-        self.processor = audio_processor.AudioProcessor(sample_rate, channels, model_path)
+    def __init__(self, sample_rate, sample_type, model_path):
+        audio_processor.loadKrispModel(model_path, "aliasForModel")
+        if sample_type == 'FLOAT':
+            self.__data_type = np.float32
+            self.processor = audio_processor.KrispAudioProcessorPcmFloat(sample_rate, "aliasForModel")
+        elif sample_type == 'PCM_16':
+            self.__data_type = np.int16
+            self.processor = audio_processor.KrispAudioProcessorPcm16(sample_rate, "aliasForModel")
+        else:
+            assert(0)
+
         self.sample_rate = sample_rate
-        self.__channels = channels
+        self.__channels = 1
 
     def store_audio_chunk(self, audio_chunk):
         self.processor.store_audio_chunk(audio_chunk)
@@ -21,19 +30,28 @@ class AudioProcessorWrapper:
         samples_count = self.processor.get_samples_count()
         frame_count = samples_count // (samples_per_frame * self.__channels)
         output_shape = (frame_count, samples_per_frame, self.__channels)
-        output_frames = np.zeros(output_shape, dtype=np.float32)
+        output_frames = np.zeros(output_shape, dtype=self.__data_type)
         num_of_frames = self.processor.get_processed_frames(output_frames)
         return output_frames[:(num_of_frames * samples_per_frame * self.__channels)]
 
 
 def simulate_audio_stream(file_path, output_file_path, chunk_size_ms, model_path):
     with sf.SoundFile(file_path) as inputFile:
-        audio_data = inputFile.read()
         sample_rate = inputFile.samplerate
+        sample_type = inputFile.subtype
+        if sample_type == 'PCM_16':
+            data_type = 'int16'
+        elif sample_type == 'FLOAT':
+            data_type = 'float32'
+        else:
+            raise ValueError(f"Unsporrted WAV data type: {sample_type}")
+        audio_data = inputFile.read(dtype=data_type)
         subtype = inputFile.subtype
         channels = inputFile.channels
+        if channels != 1:
+            raise Exception("Only MONO WAV files are supported")
         channels = audio_data.shape[1] if audio_data.ndim > 1 else 1
-        ap_wrapper = AudioProcessorWrapper(sample_rate, channels, model_path)
+        ap_wrapper = AudioProcessorWrapper(sample_rate, sample_type, model_path)
         num_samples = audio_data.shape[0]
         chunk_size_samples = (chunk_size_ms * sample_rate) // 1000
         all_frames = []
@@ -45,7 +63,7 @@ def simulate_audio_stream(file_path, output_file_path, chunk_size_ms, model_path
             all_frames.extend(frames)
         if all_frames:
             all_frames = np.concatenate(all_frames, axis=0)
-        with sf.SoundFile(output_file_path, 'w', samplerate=sample_rate, channels=channels, subtype="FLOAT") as myfile:
+        with sf.SoundFile(output_file_path, 'w', samplerate=sample_rate, channels=channels, subtype=sample_type) as myfile:
             myfile.write(all_frames)
 
 def get_command_line_arguments():

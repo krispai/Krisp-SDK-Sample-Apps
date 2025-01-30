@@ -29,7 +29,7 @@ python:
 		-D KRISP_SDK_PATH=${KRISP_SDK_PATH} \
 		-D BUILD_PYTHON_SAMPLE=1
 	${MAKE} -C build VERBOSE=1
-	cp src/sample-python/process_wav.py bin/
+	cp -f src/sample-python/process_wav.py bin/
 
 .PHONY: node
 node:
