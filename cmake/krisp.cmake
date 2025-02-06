@@ -1,3 +1,7 @@
+if (APPLE)
+	link_libraries("-framework CoreFoundation" "-framework Foundation")
+endif()
+
 set(KRISP_LIB_DIR ${KRISP_SDK_PATH}/lib)
 find_library(LIBKRISP_ABSPATH NAMES krisp-audio-sdk PATHS ${KRISP_LIB_DIR})
 if (NOT LIBKRISP_ABSPATH) 

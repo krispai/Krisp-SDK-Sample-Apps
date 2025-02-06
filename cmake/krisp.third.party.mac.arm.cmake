@@ -2,60 +2,11 @@ if(NOT DEFINED KRISP_3PARTY_LIB_DIR)
 	message(FATAL_ERROR "KRISP_3PARTY_LIB_DIR is not defined")
 endif()
 
-find_library(LIBCRYPTO_ABSPATH NAMES crypto PATHS ${KRISP_3PARTY_LIB_DIR} NO_DEFAULT_PATH)
-if (NOT LIBCRYPTO_ABSPATH) 
-	message(FATAL_ERROR "Can't find libcrypto static library in the ${KRISP_3PARTY_LIB_DIR}")
-endif()
-
-find_library(LIBRESAMPLE_ABSPATH NAMES resample PATHS ${KRISP_3PARTY_LIB_DIR} NO_DEFAULT_PATH)
-if (NOT LIBRESAMPLE_ABSPATH) 
-	message(FATAL_ERROR "Can't find libresample static library in the ${KRISP_3PARTY_LIB_DIR}")
-endif()
-
-find_library(LIBXNNPACK_ABSPATH NAMES XNNPACK PATHS ${KRISP_3PARTY_LIB_DIR} NO_DEFAULT_PATH)
-if (NOT LIBXNNPACK_ABSPATH) 
-	message(FATAL_ERROR "Can't find libXNNPACK static library in the ${KRISP_3PARTY_LIB_DIR}")
-endif()
-
-find_library(LIBCPUINFO_ABSPATH NAMES cpuinfo PATHS ${KRISP_3PARTY_LIB_DIR} NO_DEFAULT_PATH)
-if (NOT LIBCPUINFO_ABSPATH) 
-	message(FATAL_ERROR "Can't find libcpuinfo static library in the ${KRISP_3PARTY_LIB_DIR}")
-endif()
-
-find_library(LIBPTHREADPOOL_ABSPATH NAMES pthreadpool PATHS ${KRISP_3PARTY_LIB_DIR} NO_DEFAULT_PATH)
-if (NOT LIBPTHREADPOOL_ABSPATH) 
-	message(FATAL_ERROR "Can't find pthreadpool static library in the ${KRISP_3PARTY_LIB_DIR}")
-endif()
-
-find_library(LIBFFTW3F_ABSPATH NAMES fftw3f PATHS ${KRISP_3PARTY_LIB_DIR} NO_DEFAULT_PATH)
-if (NOT LIBFFTW3F_ABSPATH) 
-	message(FATAL_ERROR "Can't find libfftw3f static library in the ${KRISP_3PARTY_LIB_DIR}")
-endif()
-
-find_library(LIBFFTW3F_THREADS_ABSPATH NAMES fftw3f_threads PATHS ${KRISP_3PARTY_LIB_DIR} NO_DEFAULT_PATH)
-if (NOT LIBFFTW3F_THREADS_ABSPATH) 
-	message(FATAL_ERROR "Can't find libfftw3f_threads static library in the ${KRISP_3PARTY_LIB_DIR}")
-endif()
-
-find_library(LIBONNXRUNTIME_ABSPATH NAMES onnxruntime PATHS ${KRISP_3PARTY_LIB_DIR} NO_DEFAULT_PATH)
-if (NOT LIBONNXRUNTIME_ABSPATH) 
-	message(FATAL_ERROR "Can't find libonnxruntime static library in the ${KRISP_3PARTY_LIB_DIR}")
-endif()
+# Find all .lib files in the directory
+file(GLOB ALL_EXTERNAL_LIBS "${KRISP_3PARTY_LIB_DIR}/*.a")
 
 set(KRISP_THIRDPARTY_LIBS 
-	${LIBRESAMPLE_ABSPATH}
-	${LIBCRYPTO_ABSPATH}
-	${LIBXNNPACK_ABSPATH}
-	${LIBCPUINFO_ABSPATH}
-	${LIBPTHREADPOOL_ABSPATH}
-	${LIBFFTW3F_ABSPATH}
-	${LIBFFTW3F_THREADS_ABSPATH}
-	${LIBONNXRUNTIME_ABSPATH}
+	${ALL_EXTERNAL_LIBS}
 	blas
 	lapack
 )
-
-if (DEFINED STT)
-	include(krisp.third.party.mac.arm.stt.cmake)
-	set(KRISP_THIRDPARTY_LIBS ${KRISP_THIRDPARTY_LIBS} ${STT_LIBS})
-endif()
