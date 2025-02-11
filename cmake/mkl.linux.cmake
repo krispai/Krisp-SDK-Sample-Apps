@@ -23,7 +23,7 @@ endif()
 
 if (DEFINED BUILD_PYTHON_SAMPLE AND BUILD_PYTHON_SAMPLE STREQUAL "1")
 	target_link_libraries(
-		audio_processor
+		${PYMODNAME_NC}
 		PRIVATE
 		"$<LINK_GROUP:RESCAN,${MKL_LIB_LIST}>"
 		pthread

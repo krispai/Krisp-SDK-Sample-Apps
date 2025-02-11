@@ -199,7 +199,7 @@ static void module_destructor(PyObject *) {
     }
 }
 
-PYBIND11_MODULE(audio_processor, m)
+PYBIND11_MODULE(krisp_module, m)
 {
     module_constructor();
     m.def("loadKrispModel", &loadKrispModel);

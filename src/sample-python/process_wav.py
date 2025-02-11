@@ -3,18 +3,18 @@
 import argparse
 import soundfile as sf
 import numpy as np
-import audio_processor
+import krisp_module
 
 
 class AudioProcessorWrapper:
     def __init__(self, sample_rate, sample_type, model_path):
-        audio_processor.loadKrispModel(model_path, "aliasForModel")
+        krisp_module.loadKrispModel(model_path, "aliasForModel")
         if sample_type == 'FLOAT':
             self.__data_type = np.float32
-            self.processor = audio_processor.KrispAudioProcessorPcmFloat(sample_rate, "aliasForModel")
+            self.processor = krisp_module.KrispAudioProcessorPcmFloat(sample_rate, "aliasForModel")
         elif sample_type == 'PCM_16':
             self.__data_type = np.int16
-            self.processor = audio_processor.KrispAudioProcessorPcm16(sample_rate, "aliasForModel")
+            self.processor = krisp_module.KrispAudioProcessorPcm16(sample_rate, "aliasForModel")
         else:
             assert(0)
 

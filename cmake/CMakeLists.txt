@@ -121,17 +121,18 @@ endif ()
 if (DEFINED BUILD_PYTHON_SAMPLE AND BUILD_PYTHON_SAMPLE STREQUAL "1")
 	find_package(Python3 COMPONENTS Development NumPy)
 	find_package(pybind11 REQUIRED)
+	set(PYMODNAME_NC krisp_module)
 	pybind11_add_module(
-		audio_processor
-		${ROOT_DIR}/src/sample-python/audio_processor.cpp
+		${PYMODNAME_NC}
+		${ROOT_DIR}/src/sample-python/krisp_python_module.cpp
 	)
 	target_include_directories(
-		audio_processor
+		${PYMODNAME_NC}
 		PRIVATE
 		${KRISP_INC_DIR}
 	)
 	target_link_libraries(
-		audio_processor
+		${PYMODNAME_NC}
 		PRIVATE Python3::NumPy
 		${KRISP_LIBS}
 	)
@@ -192,5 +193,7 @@ if (DEFINED BUILD_NODEJS_SAMPLE AND BUILD_NODEJS_SAMPLE STREQUAL "1")
 endif()
 
 if(UNIX AND NOT APPLE)
-	include(mkl.linux.cmake)
+	if(NOT ${CMAKE_SYSTEM_PROCESSOR} MATCHES ".*(arm|ARM|aarch64).*")
+		include(mkl.linux.cmake)
+	endif()
 endif()
