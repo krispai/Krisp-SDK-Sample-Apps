@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iostream>
 #include "krisp-audio-api-definitions.hpp"
 #include "sound_file.hpp"
 
@@ -23,6 +24,9 @@ static std::pair<SamplingRate, bool> getKrispSamplingRate(uint32_t rate)
         break;
     case 16000:
         result.first = SamplingRate::Sr16000Hz;
+        break;
+    case 24000:
+        result.first = SamplingRate::Sr24000Hz;
         break;
     case 32000:
         result.first = SamplingRate::Sr32000Hz;
