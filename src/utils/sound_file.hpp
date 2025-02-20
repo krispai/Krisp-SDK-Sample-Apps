@@ -71,4 +71,33 @@ std::pair<bool, std::string> writeSoundFileFloat(
 	const std::vector<float> & frames,
 	unsigned samplingRate);
 
+
+static void readAllFrames(const SoundFile &sndFile,
+                          std::vector<short> &frames)
+{
+    sndFile.readAllFramesPCM16(&frames);
+}
+
+static void readAllFrames(const SoundFile &sndFile,
+                          std::vector<float> &frames)
+{
+    sndFile.readAllFramesFloat(&frames);
+}
+
+static std::pair<bool, std::string> WriteFramesToFile(
+    const std::string &fileName,
+    const std::vector<int16_t> &frames,
+    uint32_t samplingRate)
+{
+    return writeSoundFilePCM16(fileName, frames, samplingRate);
+}
+
+static std::pair<bool, std::string> WriteFramesToFile(
+    const std::string &fileName,
+    const std::vector<float> &frames,
+    uint32_t samplingRate)
+{
+    return writeSoundFileFloat(fileName, frames, samplingRate);
+}
+
 #endif

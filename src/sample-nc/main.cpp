@@ -9,6 +9,7 @@
 
 #include "argument_parser.hpp"
 #include "common.hpp"
+#include "sound_file.hpp"
 
 
 using Krisp::AudioSdk::NcSessionConfig;
