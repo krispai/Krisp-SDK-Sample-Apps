@@ -11,6 +11,13 @@ The build system and the codebase is compatible with.
 * Windows(amd64)
 * Linux(amd64)
 
+## Linux Integration
+### Managing Multithreaded Behavior
+By default SDK will expose multiple cores for the best performance. To enforce single threaded behavior run:
+
+```export OPENBLAS_NUM_THREADS=1```
+
+
 ## Build Dependencies
 The reference samples require
 * **libsndfile** library to read and write WAV files
