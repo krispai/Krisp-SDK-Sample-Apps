@@ -1,0 +1,23 @@
+# macOS system files
+.DS_Store
+**/.DS_Store
+
+# Xcode project files to ignore
+**/project.xcworkspace/
+**/xcuserdata/
+**/*.xcframework
+
+#KrispTestApp/KrispTestApp.xcodeproj/project.xcworkspace/
+#KrispTestApp/KrispTestApp.xcodeproj/xcuserdata/
+**.xcshareddata/  # Shared scheme data (optional)
+**.xcuserstate    # User UI state (should not be committed)
+**.xccheckout     # Xcode SCM data (not needed)
+**.xcscmblueprint # Xcode source control metadata
+
+# Xcode build artifacts (inside project folder)
+**Build/
+**.xcresult       # Test results (not needed in VCS)
+
+# Swift Package Manager
+**.swiftpm/
+**.Package.resolved
