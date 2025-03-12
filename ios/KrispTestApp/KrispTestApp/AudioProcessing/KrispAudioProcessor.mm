@@ -92,6 +92,7 @@ static std::pair<Krisp::AudioSdk::SamplingRate, bool> getKrispSampleRate(uint32_
 - (BOOL) setSampleRate:(UInt32)sampleRate {
     auto sampleRateResult = getKrispSampleRate(sampleRate);
     if (!sampleRateResult.second) {
+        NSLog(@"Unsupported sampling rate: %u", sampleRate);
         return NO;
     }
     self.samplingRate = sampleRateResult.first;
@@ -218,16 +219,46 @@ static std::pair<Krisp::AudioSdk::SamplingRate, bool> getKrispSampleRate(uint32_
     return dataChunkOffset;
 }
 
+- (BOOL)readWAVHeader: (NSData *)headerData
+          numChannels:(uint16_t *)numChannels
+          audioFormat:(uint16_t *)audioFormat
+           sampleRate:(uint32_t *)sampleRate
+       bytesPerSample:(uint16_t *)bitsPerSample {
+    if (headerData.length < 36) {
+        NSLog(@"WAV header is too short");
+        return NO;
+    }
+    
+    uint16_t tmp16;
+    uint32_t tmp32;
+    
+    // Read audioFormat (offset 20, 2 bytes)
+    [headerData getBytes:&tmp16 range:NSMakeRange(20, 2)];
+    *audioFormat = CFSwapInt16LittleToHost(tmp16);
+    
+    // Read numChannels (offset 22, 2 bytes)
+    [headerData getBytes:&tmp16 range:NSMakeRange(22, 2)];
+    *numChannels = CFSwapInt16LittleToHost(tmp16);
+    
+    // Read sampleRate (offset 24, 4 bytes)
+    [headerData getBytes:&tmp32 range:NSMakeRange(24, 4)];
+    *sampleRate = CFSwapInt32LittleToHost(tmp32);
+    
+    // Read bitsPerSample (offset 34, 2 bytes)
+    [headerData getBytes:&tmp16 range:NSMakeRange(34, 2)];
+    *bitsPerSample = CFSwapInt16LittleToHost(tmp16);
+        
+    NSLog(@"WAV Header Info: audioFormat=%hu, numChannels=%hu, sampleRate=%u, bytesPerSample=%hu",
+          *audioFormat, *numChannels, *sampleRate, *bitsPerSample);
+    
+    return YES;
+}
+
 - (BOOL)processWavAudioData:(NSData *)audioData
             processedAudioData: (NSData **) processedAudioData
             progressCallback:(ProcessingCallback)progressCallback
             headerCallback:(HeaderCallback)headerCallback {
-    auto ncSession = [self getKrispNcSession];
 
-    if (!ncSession.get()) {
-        return NO;
-    }
-    
     NSUInteger wavHeaderSize = [self getWavHeaderSize:audioData];
     if (audioData.length < wavHeaderSize) {
         NSLog(@"Audio data is too small to contain a valid WAV header.");
@@ -238,8 +269,42 @@ static std::pair<Krisp::AudioSdk::SamplingRate, bool> getKrispSampleRate(uint32_
     NSData *headerData = [audioData subdataWithRange:NSMakeRange(0, wavHeaderSize)];
     NSData *payloadData = [audioData subdataWithRange:NSMakeRange(wavHeaderSize, audioData.length - wavHeaderSize)];
 
+    uint16_t numChannels, audioFormat, bitsPerSample;
+    uint32_t sampleRate;
+    
+    [self readWAVHeader:headerData
+            numChannels:&numChannels
+            audioFormat:&audioFormat
+             sampleRate:&sampleRate
+         bytesPerSample:&bitsPerSample];
+    
+    if (audioFormat != 3) {
+        NSLog(@"WAV file should be IEEE Float (format is: %hu", audioFormat);
+        return NO;
+    }
+    
+    if (bitsPerSample != 32) {
+        NSLog(@"WAV file is not PCM FLOAT32 (bytes per sample is: %hu", bitsPerSample);
+        return NO;
+    }
+    
+    if (numChannels != 1) {
+        NSLog(@"The code is limited to work only with mono WAV file. The numChannels is: %hu", numChannels);
+        return NO;
+    }
+    
+    if (![self setSampleRate:sampleRate]) {
+        return NO;
+    }
+    auto ncSession = [self getKrispNcSession];
+
+    if (!ncSession.get()) {
+        return NO;
+    }
+  
     const int frameDurationMs = 10;
-    const int bytesPerSample = 4;
+    const int bytesPerSample = bitsPerSample / 8;
+
     int samplesPerFrame = ([self getSampleRate] * frameDurationMs) / 1000;
     const int frameSize = samplesPerFrame * bytesPerSample;
 
@@ -350,6 +415,3 @@ static const int kFrameDurationMs = 10;
 }
 
 @end
-
-
-

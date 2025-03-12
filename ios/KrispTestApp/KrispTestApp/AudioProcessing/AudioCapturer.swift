@@ -11,48 +11,48 @@ import AVFoundation
 
 
 class AudioCapturer : ObservableObject {
-    
+
     private var audioEngine: AVAudioEngine?
     private var audioFormat: AVAudioFormat?
     private var inputFormat: AVAudioFormat?
-        
+
     private var sampleRate: UInt32 = 44100
     private let bytesPerSample: Int = 4
     private let frameDurationMs: UInt32 = 10
     private let channels: UInt32 = 1
-    
+
     private let krispAudioProcessor: KrispAudioProcessor
-    
+
     init(krispAudioProcessor:KrispAudioProcessor) {
         self.krispAudioProcessor = krispAudioProcessor
     }
-    
+
     private var samplesPerFrame: Int {
         return Int(sampleRate * frameDurationMs / 1000)
     }
-    
+
     private var bytesPerFrame: Int {
         return samplesPerFrame * bytesPerSample
     }
-    
+
     private var bytesPerMinute: Int {
         return Int(sampleRate) * 60 * bytesPerSample
     }
 
-    
+
     private var numberOfMinsProcessed = 0;
-    
+
     private var processedData = Data()
     private var numberOfBytesProcessed: Int = 0
-    
+
     private var dataBlockSize = 48000;
     private var dataBlockReserve = 4800;
     private var processedNcDataArray = Array<Data>()
     private var currentDataBlock = Data()
     private var processedNcDataBlock = Data()
-    
+
     private var onMinuteProcessedCallback: ((Int) -> Void)? = nil
-    
+
     private var isRealtime  = true
 
     func startRecording(mode : String,
@@ -88,12 +88,12 @@ class AudioCapturer : ObservableObject {
             print("Failed to use Krisp with \(self.sampleRate) sample rate.")
             return
         }
-        
+
         audioEngine = AVAudioEngine()
         guard let audioEngine = audioEngine else { return }
-        
+
         let input = audioEngine.inputNode
-        
+
         let settings: [String: Any] = [
             AVFormatIDKey: kAudioFormatLinearPCM,
             AVSampleRateKey: sampleRate,
@@ -125,11 +125,10 @@ class AudioCapturer : ObservableObject {
         }
         let isFloat = format.isInterleaved
         self.processedData = Data()
-        
         self.currentDataBlock = Data()
         self.processedNcDataBlock = Data()
         self.processedNcDataArray = Array<Data>()
-                
+
         if !self.isRealtime {
             let captureBlockSize = Int(ceil(captureModeBlockSizeInMinutes * 60.0 * 100.0 * Float(bytesPerFrame)))
             self.dataBlockSize = captureBlockSize
@@ -145,7 +144,7 @@ class AudioCapturer : ObservableObject {
             print("Audio Engine error: \(error)")
         }
     }
-    
+
     private func processAudioDataChunkRealtime(data : Data) {
         currentDataBlock.append(data)
         let completeFramesCount = currentDataBlock.count / bytesPerFrame
@@ -168,7 +167,7 @@ class AudioCapturer : ObservableObject {
             self.onMinuteProcessedCallback?(self.numberOfMinsProcessed)
         }
    }
-    
+
     private func processAudioDataDistributed(data : Data) {
         currentDataBlock.append(data)
         if currentDataBlock.count > dataBlockSize {
@@ -188,7 +187,7 @@ class AudioCapturer : ObservableObject {
             }
         }
     }
-    
+
     func stopRecording() {
         self.audioEngine?.stop()
         self.audioEngine?.inputNode.removeTap(onBus: 0)
