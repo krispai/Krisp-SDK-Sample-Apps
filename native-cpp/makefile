@@ -1,10 +1,15 @@
 BUILD_SAMPLE_NC := 0
+BUILD_SAMPLE_VAD := 0
 BUILD_SAMPLE_AR := 0
 BUILD_SAMPLE_PYTHON := 0
 BUILD_SAMPLE_NODEJS := 0
 
 ifneq ($(filter nc,$(MAKECMDGOALS)),)
 	BUILD_SAMPLE_NC := 1
+endif
+
+ifneq ($(filter vad,$(MAKECMDGOALS)),)
+	BUILD_SAMPLE_VAD := 1
 endif
 
 ifneq ($(filter al,$(MAKECMDGOALS)),)
@@ -19,9 +24,11 @@ ifneq ($(filter node,$(MAKECMDGOALS)),)
 	BUILD_SAMPLE_NODEJS := 1
 endif
 
-.PHONY: nc ar python build run clean node
+.PHONY: nc vad ar python build run clean node
 
 nc: build
+
+vad: build
 
 ar: build
 
@@ -37,6 +44,7 @@ build:
 		-D LIBSNDFILE_LIB=${LIBSNDFILE_LIB} \
 		-D NODE_INC=${NODE_INC} \
 		-D BUILD_SAMPLE_NC=$(BUILD_SAMPLE_NC) \
+		-D BUILD_SAMPLE_VAD=$(BUILD_SAMPLE_VAD) \
 		-D BUILD_SAMPLE_AL=$(BUILD_SAMPLE_AL) \
 		-D BUILD_SAMPLE_PYTHON=$(BUILD_SAMPLE_PYTHON) \
 		-D BUILD_SAMPLE_NODEJS=$(BUILD_SAMPLE_NODEJS) \

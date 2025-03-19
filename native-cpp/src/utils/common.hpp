@@ -5,7 +5,7 @@
 #include "krisp-audio-api-definitions.hpp"
 
 
-using namespace Krisp::AudioSdk;
+using Krisp::AudioSdk::SamplingRate;
 
 template <typename T>
 int error(const T &e)

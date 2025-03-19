@@ -76,6 +76,30 @@ if (DEFINED BUILD_SAMPLE_NC AND BUILD_SAMPLE_NC STREQUAL "1")
 	)
 endif ()
 
+if (DEFINED BUILD_SAMPLE_VAD AND BUILD_SAMPLE_VAD STREQUAL "1")
+	set(APPNAME_VAD sample-vad)
+	# is needed to get ${LIBSNDFILE_ABSPATH} and ${LIBSNDFILE_INC}
+	include(libsndfile.cmake)
+	add_executable(
+		${APPNAME_VAD}
+		${ROOT_DIR}/src/sample-vad/main.cpp
+		${ROOT_DIR}/src/utils/sound_file.cpp
+		${ROOT_DIR}/src/utils/argument_parser.cpp
+	)
+	target_include_directories(
+		${APPNAME_VAD}
+		PRIVATE
+		${ROOT_DIR}/src/utils
+		${LIBSNDFILE_INC}
+		${KRISP_INC_DIR}
+	)
+	target_link_libraries(
+		${APPNAME_VAD}
+		${LIBSNDFILE_ABSPATH}
+		${KRISP_LIBS}
+	)
+endif ()
+
 if (DEFINED BUILD_SAMPLE_AL AND BUILD_SAMPLE_AL STREQUAL "1")
 	set(APPNAME_AR sample-ar)
 	include(libsndfile.cmake)
