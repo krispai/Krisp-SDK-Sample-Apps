@@ -30,6 +30,7 @@ class KrispAudioTest:
         rates = {
             8000: krisp_audio.SamplingRate.Sr8000Hz,
             16000: krisp_audio.SamplingRate.Sr16000Hz,
+            24000: krisp_audio.SamplingRate.Sr24000Hz,
             32000: krisp_audio.SamplingRate.Sr32000Hz,
             44100: krisp_audio.SamplingRate.Sr44100Hz,
             48000: krisp_audio.SamplingRate.Sr48000Hz

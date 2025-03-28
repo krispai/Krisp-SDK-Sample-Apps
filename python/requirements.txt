@@ -1,2 +1,2 @@
-krisp_audio==1.0.0
+krisp_audio>=1.0.0
 soundfile
