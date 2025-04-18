@@ -16,7 +16,7 @@ endif()
 
 set(KRISP_3PARTY_LIB_DIR ${KRISP_SDK_PATH}/external)
 if (WIN32)
-	include(krisp.third.party.win.x64.cmake)
+	include(krisp.third.party.win.cmake)
 elseif (APPLE AND ARM_CPU)
 	include(krisp.third.party.mac.arm.cmake)
 elseif (APPLE)
