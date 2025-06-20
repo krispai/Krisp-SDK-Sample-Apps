@@ -8,6 +8,7 @@
 
 + (BOOL)load;
 + (BOOL)unload;
++ (NSString *) getVersion;
 
 @end
 
