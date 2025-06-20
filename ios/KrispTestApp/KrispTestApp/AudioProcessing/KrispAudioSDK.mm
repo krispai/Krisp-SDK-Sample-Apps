@@ -33,5 +33,14 @@ static BOOL isLoaded = NO;
     return NO;
 }
 
++ (NSString *) getVersion {
+    Krisp::AudioSdk::VersionInfo version;
+    Krisp::AudioSdk::getVersion(version);
+    return [NSString stringWithFormat:@"%d.%d.%d.%d",
+            version.major,
+            version.minor,
+            version.patch,
+            version.build];
+}
 
 @end

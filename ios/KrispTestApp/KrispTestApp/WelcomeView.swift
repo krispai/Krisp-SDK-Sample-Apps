@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct WelcomeView: View {
+    @ObservedObject var appState: AppState
+    
     var body: some View {
         VStack(spacing: 40) {
             Spacer()
@@ -28,6 +30,11 @@ struct WelcomeView: View {
                     //.layoutPriority(1)
                 Spacer()
             }
+            Text("Krisp SDK Version: \(appState.versionText)")
+                .multilineTextAlignment(TextAlignment.leading)
+                .font(.title)
+                .fontWeight(.bold)
+                .minimumScaleFactor(0.5)
             Text("Select Testing Mode")
                 .multilineTextAlignment(TextAlignment.leading)
                 .font(.title)
@@ -59,5 +66,5 @@ struct WelcomeView: View {
 }
 
 #Preview {
-    WelcomeView()
+    WelcomeView(appState: AppState())
 }
