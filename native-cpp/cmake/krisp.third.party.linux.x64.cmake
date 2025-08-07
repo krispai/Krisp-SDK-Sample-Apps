@@ -109,8 +109,8 @@ set(EXTERNAL_LIBS
 	libnsync_cpp.a
 	libcpuinfo.a
 	libcrypto.a
-	libfftw3f.a
-	libfftw3f_threads.a
+	#libfftw3f.a
+	#libfftw3f_threads.a
 	libopenblas.a
 	libresample.a
 	libssl.a

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.10)
 
 if (WIN32)
 	include(visualstudio.cmake NO_POLICY_SCOPE)
@@ -35,11 +35,37 @@ if(UNIX OR APPLE)
     endif()
 endif()
 
-if (NOT DEFINED KRISP_SDK_PATH)
-	message(FATAL_ERROR "KRISP_SDK_PATH must be specified")
+# Option to copy SDK to project root for easier IDE integration
+set(COPY_KRISP_SDK "" CACHE STRING "Path to Krisp SDK to copy")
+option(BUILD_SAMPLE_NC "Build sample-nc" OFF)
+option(BUILD_KRISP_WAV "Build krisp-wav app" OFF)
+option(BUILD_SAMPLE_VAD "Build sample-vad" OFF)
+option(BUILD_SAMPLE_AL "Build sample-ar" OFF)
+option(BUILD_SAMPLE_PYTHON "Build sample-python" OFF)
+option(BUILD_SAMPLE_NODEJS "Build sample-nodejs" OFF)
+option(ENABLE_ACCENT "Enable Accent API" OFF)
+
+
+# Configure Krisp SDK
+set(KRISP_SDK_LOCAL ${CMAKE_BINARY_DIR}/../krisp-sdk)
+get_filename_component(KRISP_SDK_LOCAL "${KRISP_SDK_LOCAL}" ABSOLUTE)
+
+if(COPY_KRISP_SDK)
+	if(EXISTS ${KRISP_SDK_LOCAL})
+		message(FATAL_ERROR "Krisp SDK already exists at: ${KRISP_SDK_LOCAL}")
+	endif()
+	file(MAKE_DIRECTORY ${KRISP_SDK_LOCAL})
+    file(COPY ${COPY_KRISP_SDK}/ DESTINATION ${KRISP_SDK_LOCAL})
+    message(STATUS "Krisp SDK copied to: ${KRISP_SDK_LOCAL}")
 endif()
 
-set(KRISP_INC_DIR ${KRISP_SDK_PATH}/include)
+if(NOT EXISTS ${KRISP_SDK_LOCAL})
+	message(FATAL_ERROR "KRISP_SDK_LOCAL directory does not exist: ${KRISP_SDK_LOCAL}")
+endif()
+
+set(KRISP_INC_DIR ${KRISP_SDK_LOCAL}/include)
+set(KRISP_LIB_DIR ${KRISP_SDK_LOCAL}/lib/static)
+set(KRISP_3PARTY_LIB_DIR ${KRISP_SDK_LOCAL}/lib/static/external)
 
 # Krisp SDK libraries are applied to all targets
 include(krisp.cmake)
@@ -52,7 +78,7 @@ if (WIN32 AND MSVC)
 	add_compile_definitions(_ITERATOR_DEBUG_LEVEL=0)
 endif()
 
-if (DEFINED BUILD_SAMPLE_NC AND BUILD_SAMPLE_NC STREQUAL "1")
+if (BUILD_SAMPLE_NC)
 	set(APPNAME_NC sample-nc)
 	# is needed to get ${LIBSNDFILE_ABSPATH} and ${LIBSNDFILE_INC}
 	include(libsndfile.cmake)
@@ -73,10 +99,33 @@ if (DEFINED BUILD_SAMPLE_NC AND BUILD_SAMPLE_NC STREQUAL "1")
 		${APPNAME_NC}
 		${LIBSNDFILE_ABSPATH}
 		${KRISP_LIBS}
+		#/Users/atatalyan/jemalloc-install/lib/libjemalloc.a
 	)
 endif ()
 
-if (DEFINED BUILD_SAMPLE_VAD AND BUILD_SAMPLE_VAD STREQUAL "1")
+if (BUILD_KRISP_WAV)
+	set(APPNAME_NC_MC krisp-wav)
+	add_executable(
+		${APPNAME_NC_MC}
+		${ROOT_DIR}/src/sample-mc/main.cpp
+		${ROOT_DIR}/src/utils/argument_parser.cpp
+	)
+	if (ENABLE_ACCENT)
+		set_target_properties(${APPNAME_NC_MC} PROPERTIES COMPILE_DEFINITIONS "ENABLE_ACCENT")
+	endif()
+	target_include_directories(
+		${APPNAME_NC_MC}
+		PRIVATE
+		${ROOT_DIR}/src/utils
+		${KRISP_INC_DIR}
+	)
+	target_link_libraries(
+		${APPNAME_NC_MC}
+		${KRISP_LIBS}
+	)
+endif ()
+
+if (BUILD_SAMPLE_VAD)
 	set(APPNAME_VAD sample-vad)
 	# is needed to get ${LIBSNDFILE_ABSPATH} and ${LIBSNDFILE_INC}
 	include(libsndfile.cmake)
@@ -100,7 +149,7 @@ if (DEFINED BUILD_SAMPLE_VAD AND BUILD_SAMPLE_VAD STREQUAL "1")
 	)
 endif ()
 
-if (DEFINED BUILD_SAMPLE_AL AND BUILD_SAMPLE_AL STREQUAL "1")
+if (BUILD_SAMPLE_AL)
 	set(APPNAME_AR sample-ar)
 	include(libsndfile.cmake)
 	add_executable(
@@ -123,7 +172,7 @@ if (DEFINED BUILD_SAMPLE_AL AND BUILD_SAMPLE_AL STREQUAL "1")
 	)
 endif ()
 
-if (DEFINED BUILD_SAMPLE_PYTHON AND BUILD_SAMPLE_PYTHON STREQUAL "1")
+if (BUILD_SAMPLE_PYTHON)
 	if (DEFINED PYTHON3_PATH AND NOT "PYTHON3_PATH" STREQUAL "")
 		set(Python3_EXECUTABLE "${PYTHON3_PATH}")
 	endif()
@@ -147,8 +196,8 @@ if (DEFINED BUILD_SAMPLE_PYTHON AND BUILD_SAMPLE_PYTHON STREQUAL "1")
 	)
 endif ()
 
-if (DEFINED BUILD_SAMPLE_NODEJS AND BUILD_SAMPLE_NODEJS STREQUAL "1")
-	if (NOT NODE_INC OR NODE_INC STREQUAL "")
+if (BUILD_SAMPLE_NODEJS)
+	if (NOT NODE_INC)
 		message(FATAL_ERROR "the NODE_INC is not set.")
 	endif()
 	set(NODEJS_SAMPLE_DIR ${ROOT_DIR}/src/sample-node)
