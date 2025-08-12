@@ -11,28 +11,43 @@
         android:id="@+id/sample_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Hello World!"
+        android:text="@string/app_name"
+        android:textSize="34sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toTopOf="@+id/text_wav_file"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toTopOf="@+id/text_wav_file" />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <Button
         android:id="@+id/button_wav_file"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Select WAV File"
+        android:layout_marginBottom="50dp"
+        android:text="@string/btn_wav_name"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.497"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <Button
+        android:id="@+id/button_model_file"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="35dp"
+        android:layout_marginBottom="25dp"
+        android:text="@string/btn_model_name"
+        app:layout_constraintBottom_toTopOf="@+id/button_wav_file"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.51"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/text_wav_file" />
+        app:layout_constraintTop_toBottomOf="@+id/text_wav_file"
+        app:layout_constraintVertical_bias="0.05" />
 
     <TextView
         android:id="@+id/text_wav_file"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Select WAV File"
+        android:text="@string/txt_wav"
         app:layout_constraintBottom_toTopOf="@+id/button_wav_file"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

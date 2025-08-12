@@ -1,3 +1,7 @@
 <resources>
-    <string name="app_name">KrispTestApp</string>
+    <string name="app_name">Krisp Test App</string>
+    <string name="txt_wav">Select WAV File</string>
+    <string name="txt_model">Select Krisp Model</string>
+    <string name="btn_wav_name">Load WAV File</string>
+    <string name="btn_model_name">Load Model File</string>
 </resources>

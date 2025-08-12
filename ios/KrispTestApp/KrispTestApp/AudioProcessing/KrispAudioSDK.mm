@@ -11,6 +11,9 @@ static BOOL isLoaded = NO;
 
 @implementation KrispAudioSDK
 
+//void logFunction(const std::string & error, Krisp::AudioSdk::LogLevel) {
+//
+//}
 
 + (BOOL) load {
     static NSObject *mutex = nil;
@@ -23,6 +26,7 @@ static BOOL isLoaded = NO;
             NSLog(@"Krisp Audio SDK is already loaded");
             return YES;
         }
+//        Krisp::AudioSdk::globalInit(L"", logFunction, Krisp::AudioSdk::LogLevel::Off);
         Krisp::AudioSdk::globalInit(L"");
         isLoaded = YES;
         return YES;
