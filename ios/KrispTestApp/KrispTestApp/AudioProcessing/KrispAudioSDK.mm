@@ -26,7 +26,6 @@ static BOOL isLoaded = NO;
             NSLog(@"Krisp Audio SDK is already loaded");
             return YES;
         }
-//        Krisp::AudioSdk::globalInit(L"", logFunction, Krisp::AudioSdk::LogLevel::Off);
         Krisp::AudioSdk::globalInit(L"");
         isLoaded = YES;
         return YES;
