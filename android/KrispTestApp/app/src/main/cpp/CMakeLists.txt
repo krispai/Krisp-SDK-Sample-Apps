@@ -11,6 +11,35 @@ cmake_minimum_required(VERSION 3.22.1)
 # build script scope).
 project("krisptestapp")
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+if (NOT DEFINED KRISP_SDK_ROOT)
+    message(FATAL_ERROR "KRISP_SDK_ROOT not set")
+endif()
+
+# Include Krisp headers
+include_directories(${KRISP_SDK_ROOT}/include)
+
+# ABI-specific lib paths
+if (ANDROID_ABI STREQUAL "arm64-v8a")
+    set(KRISP_LIB_DIR ${KRISP_SDK_ROOT}/lib/arm64-v8a/static)
+elseif (ANDROID_ABI STREQUAL "armeabi-v7a")
+    set(KRISP_LIB_DIR ${KRISP_SDK_ROOT}/lib/armeabi-v7a/static)
+elseif (ANDROID_ABI STREQUAL "x86_64")
+    set(KRISP_LIB_DIR ${KRISP_SDK_ROOT}/lib/x86_64/static)
+else()
+    message(FATAL_ERROR "Unsupported ABI: ${ANDROID_ABI}")
+endif()
+
+add_library(krisp-audio-sdk STATIC IMPORTED)
+set_target_properties(krisp-audio-sdk PROPERTIES
+        IMPORTED_LOCATION ${KRISP_LIB_DIR}/libkrisp-audio-sdk.a
+)
+
+file(GLOB KRISP_EXTERNAL_LIBS "${KRISP_LIB_DIR}/external/*.a")
+
 # Creates and names a library, sets it as either STATIC
 # or SHARED, and provides the relative paths to its source code.
 # You can define multiple libraries, and CMake builds them for you.
@@ -26,12 +55,11 @@ project("krisptestapp")
 # used in the AndroidManifest.xml file.
 add_library(${CMAKE_PROJECT_NAME} SHARED
     # List C/C++ source files with relative paths to this CMakeLists.txt.
-    native-lib.cpp)
+        krisp.cpp)
 
-# Specifies libraries CMake should link to your target library. You
-# can link libraries from various origins, such as libraries defined in this
-# build script, prebuilt third-party libraries, or Android system libraries.
+
 target_link_libraries(${CMAKE_PROJECT_NAME}
-    # List libraries link to the target library
+    krisp-audio-sdk
+    ${KRISP_EXTERNAL_LIBS}
     android
     log)

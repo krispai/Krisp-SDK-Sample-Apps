@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -5,16 +7,41 @@ plugins {
 
 android {
     namespace = "com.krisp.krisptestapp"
-    compileSdk = 36
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.krisp.krisptestapp"
         minSdk = 21
-        targetSdk = 36
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        ndk {
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")
+        }
+        externalNativeBuild {
+            cmake {
+                // Read krisp.sdk.dir from local.properties (relative OK) or env var
+                val lp = rootProject.file("local.properties")
+                val props = Properties().apply {
+                    if (lp.exists()) lp.inputStream().use { load(it) }
+                }
+
+                val krispSdkDir = props.getProperty("krisp.sdk.dir")
+                    ?.let { rootProject.file(it).absolutePath } // handle relative paths
+                    ?: System.getenv("KRISP_SDK_DIR")
+                    ?: error("Set krisp.sdk.dir in local.properties or KRISP_SDK_DIR in env")
+
+                arguments += listOf(
+                    "-DANDROID_PLATFORM=android-35",
+                    "-DANDROID_STL=c++_static",
+//                    "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON",
+                    "-DKRISP_SDK_ROOT=$krispSdkDir"
+                )
+            }
+        }
+
     }
 
     buildTypes {

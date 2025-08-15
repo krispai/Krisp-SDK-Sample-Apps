@@ -4,4 +4,15 @@
     <string name="txt_model">Select Krisp Model</string>
     <string name="btn_wav_name">Load WAV File</string>
     <string name="btn_model_name">Load Model File</string>
+    <string name="btn_process_name">Process</string>
+
+    <string name="txt_process">Select WAV file and model</string>
+    <string name="txt_process_in_progress">Processing is in progress</string>
+    <string name="txt_process_done">Processing is complete</string>
+
+    <string name="txt_wav_loaded_prefix">WAV </string>
+    <string name="txt_wav_loaded_postfix">is loaded.</string>
+    <string name="txt_model_loaded_prefix">Model </string>
+    <string name="txt_model_loaded_postfix"> is loaded.</string>
+    <string name="txt_model_failed_prefix">Model load failed </string>
 </resources>

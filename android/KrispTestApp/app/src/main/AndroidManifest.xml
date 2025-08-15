@@ -16,7 +16,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.KrispTestApp" >
         <activity
-            android:name=".MainActivity"
+            android:name=".WavProcessActivity"
             android:exported="true" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
