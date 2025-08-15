@@ -11,9 +11,7 @@ static BOOL isLoaded = NO;
 
 @implementation KrispAudioSDK
 
-//void logFunction(const std::string & error, Krisp::AudioSdk::LogLevel) {
-//
-//}
+
 
 + (BOOL) load {
     static NSObject *mutex = nil;
