@@ -12,7 +12,6 @@ static BOOL isLoaded = NO;
 @implementation KrispAudioSDK
 
 
-
 + (BOOL) load {
     static NSObject *mutex = nil;
     static dispatch_once_t onceToken;
