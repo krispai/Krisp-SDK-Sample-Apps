@@ -44,6 +44,7 @@ option(BUILD_SAMPLE_AL "Build sample-ar" OFF)
 option(BUILD_SAMPLE_PYTHON "Build sample-python" OFF)
 option(BUILD_SAMPLE_NODEJS "Build sample-nodejs" OFF)
 option(ENABLE_ACCENT "Enable Accent API" OFF)
+option(USE_KRISP_DYNAMIC_LIBRARY "Use Krisp dynamic library" OFF)
 
 
 # Configure Krisp SDK
@@ -64,8 +65,12 @@ if(NOT EXISTS ${KRISP_SDK_LOCAL})
 endif()
 
 set(KRISP_INC_DIR ${KRISP_SDK_LOCAL}/include)
-set(KRISP_LIB_DIR ${KRISP_SDK_LOCAL}/lib/static)
-set(KRISP_3PARTY_LIB_DIR ${KRISP_SDK_LOCAL}/lib/static/external)
+if (USE_KRISP_DYNAMIC_LIBRARY)
+	set(KRISP_LIB_DIR ${KRISP_SDK_LOCAL}/lib/dynamic)
+else()
+	set(KRISP_LIB_DIR ${KRISP_SDK_LOCAL}/lib/static)
+	set(KRISP_3PARTY_LIB_DIR ${KRISP_SDK_LOCAL}/lib/static/external)
+endif()
 
 # Krisp SDK libraries are applied to all targets
 include(krisp.cmake)

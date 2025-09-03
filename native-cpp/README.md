@@ -38,6 +38,7 @@ The build system uses CMake.
 ### Options
 
 - `-DCOPY_KRISP_SDK=<path>`: Copy SDK into the `krisp-sdk/` folder. Use this once.
+- `-DUSE_KRISP_DYNAMIC_LIBRARY=ON|OFF`: Use Krisp dynamic library. Krisp static libraries are used by default.
 - `-DBUILD_SAMPLE_NC=ON|OFF`: Build `bin/sample-nc`.
 - `-DBUILD_WAV_CLI=ON|OFF`: Build `bin/krisp-wav-cli` (from `src/wav-cli`).
 - `-DBUILD_SAMPLE_VAD=ON|OFF`: Build `bin/sample-vad`.
