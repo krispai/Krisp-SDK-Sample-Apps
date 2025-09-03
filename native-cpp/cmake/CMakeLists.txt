@@ -38,7 +38,7 @@ endif()
 # Option to copy SDK to project root for easier IDE integration
 set(COPY_KRISP_SDK "" CACHE STRING "Path to Krisp SDK to copy")
 option(BUILD_SAMPLE_NC "Build sample-nc" OFF)
-option(BUILD_KRISP_WAV "Build krisp-wav app" OFF)
+option(BUILD_WAV_CLI "Build krisp-wav app" OFF)
 option(BUILD_SAMPLE_VAD "Build sample-vad" OFF)
 option(BUILD_SAMPLE_AL "Build sample-ar" OFF)
 option(BUILD_SAMPLE_PYTHON "Build sample-python" OFF)
@@ -103,24 +103,24 @@ if (BUILD_SAMPLE_NC)
 	)
 endif ()
 
-if (BUILD_KRISP_WAV)
-	set(APPNAME_NC_MC krisp-wav)
+if (BUILD_WAV_CLI)
+	set(APPNAME_WAV_CLI krisp-wav-cli)
 	add_executable(
-		${APPNAME_NC_MC}
-		${ROOT_DIR}/src/sample-mc/main.cpp
+		${APPNAME_WAV_CLI}
+		${ROOT_DIR}/src/wav-cli/main.cpp
 		${ROOT_DIR}/src/utils/argument_parser.cpp
 	)
 	if (ENABLE_ACCENT)
-		set_target_properties(${APPNAME_NC_MC} PROPERTIES COMPILE_DEFINITIONS "ENABLE_ACCENT")
+		set_target_properties(${APPNAME_WAV_CLI} PROPERTIES COMPILE_DEFINITIONS "ENABLE_ACCENT")
 	endif()
 	target_include_directories(
-		${APPNAME_NC_MC}
+		${APPNAME_WAV_CLI}
 		PRIVATE
 		${ROOT_DIR}/src/utils
 		${KRISP_INC_DIR}
 	)
 	target_link_libraries(
-		${APPNAME_NC_MC}
+		${APPNAME_WAV_CLI}
 		${KRISP_LIBS}
 	)
 endif ()
