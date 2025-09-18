@@ -74,6 +74,12 @@ cd build
 make
 ```
 
+#### Windows Build
+```
+cmake -S cmake -B build -DBUILD_WAV_CLI=ON -DCMAKE_BUILD_TYPE=Release -DUSE_KRISP_DYNAMIC_LIBRARY=ON -DCOPY_KRISP_SDK=C:\Users\you\dev\krisp-audio-sdk-9.9.3-win_x64_mt
+cmake --build build --config Release
+```
+
 ### Troubleshooting
 #### Error Krisp SDK already exists
 ```
