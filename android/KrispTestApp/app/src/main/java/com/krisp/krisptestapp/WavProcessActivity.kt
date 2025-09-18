@@ -11,7 +11,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
-
+import androidx.documentfile.provider.DocumentFile
+import androidx.appcompat.app.AlertDialog
+import android.util.Log
 
 class WavProcessActivity : AppCompatActivity() {
 
@@ -36,18 +38,26 @@ class WavProcessActivity : AppCompatActivity() {
     }
 
     private fun handleModelUri(uri: Uri) {
-        contentResolver.openInputStream(uri)?.use { input ->
-            val bytes = input.readBytes()
-            var msg = ""
-            if (krispLoadModel(bytes, bytes.size) == 0) {
-                msg = getString(R.string.txt_model_loaded_prefix) + uri.toString() + " " + getString(R.string.txt_model_loaded_postfix)
-                selectedModelUri = uri
+        try {
+            contentResolver.openInputStream(uri)?.use { input ->
+                val bytes = input.readBytes()
+                val rc = krispLoadModel(bytes, bytes.size)
+                if (rc == 0) {
+                    selectedModelUri = uri
+                    binding.textModelFile.text = getString(R.string.txt_model_loaded_prefix) + uri.toString() + " " + getString(R.string.txt_model_loaded_postfix)
+                } else {
+                    selectedModelUri = null
+                    binding.textModelFile.text = getString(R.string.txt_model_failed_prefix) + uri.toString()
+                }
+            } ?: run {
+                binding.textModelFile.text = "Failed to open model: null stream"
+                Log.e("WavProcess", "openInputStream returned null for $uri")
             }
-            else {
-                msg = getString(R.string.txt_model_failed_prefix) + uri.toString()
-                selectedModelUri = null
-            }
+        } catch (t: Throwable) {
+            selectedModelUri = null
+            val msg = "Model open failed: ${t.javaClass.simpleName}: ${t.message}"
             binding.textModelFile.text = msg
+            Log.e("WavProcess", "handleModelUri failed for $uri", t)
         }
     }
 
@@ -55,6 +65,83 @@ class WavProcessActivity : AppCompatActivity() {
         selectedWavUri = uri
         val wavMsg = getString(R.string.txt_wav_loaded_prefix) + uri.toString() + " " + getString(R.string.txt_wav_loaded_postfix)
         binding.textWavFile.text = wavMsg
+    }
+
+    private val pickModelGet = registerForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { handleModelUri(it) } // No persistable permission with GetContent
+    }
+
+    private val pickModelDoc = registerForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        if (uri == null) {
+            binding.textModelFile.text = "No file selected"
+            return@registerForActivityResult
+        }
+        try {
+            // Persist only if supported (OpenDocument supports; GetContent does not)
+            contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        } catch (_: Throwable) { /* ignore */ }
+        handleModelUri(uri)
+    }
+
+    private val pickModelActivity = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { res ->
+        val uri = res.data?.data ?: return@registerForActivityResult
+        try {
+            contentResolver.takePersistableUriPermission(
+                uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION
+            )
+        } catch (_: Throwable) { /* may be unnecessary on some providers */ }
+        handleModelUri(uri)
+    }
+
+    private val pickFolder = registerForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { treeUri: Uri? ->
+        treeUri ?: return@registerForActivityResult
+        try {
+            contentResolver.takePersistableUriPermission(
+                treeUri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION
+            )
+        } catch (_: Throwable) {}
+        val dir = DocumentFile.fromTreeUri(this, treeUri) ?: return@registerForActivityResult
+        showKefChooser(dir)
+    }
+
+    private fun showKefChooser(dir: DocumentFile) {
+        val files = dir.listFiles().filter { it.isFile && (it.name?.endsWith(".kef", true) == true) }
+        if (files.isEmpty()) {
+            AlertDialog.Builder(this)
+                .setTitle("No .kef files found")
+                .setMessage("Pick a different folder or copy your model into this folder.")
+                .setPositiveButton(android.R.string.ok, null)
+                .show()
+            return
+        }
+        val names = files.map { it.name ?: "(unnamed)" }.toTypedArray()
+        AlertDialog.Builder(this)
+            .setTitle("Select model")
+            .setItems(names) { _, which ->
+                val file = files[which]
+                handleModelUri(file.uri)
+            }
+            .show()
+    }
+
+    private fun openFolderPicker() {
+        // Launch tree picker; user can pick "Downloads" manually if not pre-seeded
+        pickFolder.launch(null)
+    }
+
+    private fun openModelPicker() {
+        // Clean, contract-based OpenDocument flow (persistable)
+        pickModelDoc.launch(arrayOf("application/*", "application/octet-stream", "*/*"))
     }
 
     private val pickModel = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
@@ -96,8 +183,13 @@ class WavProcessActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         binding.buttonModelFile.setOnClickListener {
-            // `.kef` usually has no official MIME; allow generic fallback
-            pickModel.launch(arrayOf("application/octet-stream", "*/*"))
+            // Force real Files (DocumentsUI) with persistable URI; fallback to GetContent if needed
+            openModelPicker()
+        }
+        binding.buttonModelFile.setOnLongClickListener {
+            // Manual fallback: let user pick a folder and choose a .kef inside it
+            openFolderPicker()
+            true
         }
         binding.buttonWavFile.setOnClickListener {
             pickWav.launch(arrayOf("audio/wav", "audio/x-wav", "audio/vnd.wave"))

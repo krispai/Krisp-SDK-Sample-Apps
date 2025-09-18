@@ -35,8 +35,10 @@ android {
 
                 arguments += listOf(
                     "-DANDROID_PLATFORM=android-35",
-                    "-DANDROID_STL=c++_static",
-//                    "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON",
+                    //"-DANDROID_STL=c++_static",
+                    "-DANDROID_STL=c++_shared",
+                    //"-DKRISP_LINK_TYPE=static",
+                    "-DKRISP_LINK_TYPE=dynamic",
                     "-DKRISP_SDK_ROOT=$krispSdkDir"
                 )
             }

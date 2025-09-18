@@ -16,7 +16,7 @@ public:
     static KrispLibrary * singletone() {
         static KrispLibrary * _ptr = nullptr;
         if (!_ptr) {
-            Krisp::AudioSdk::globalInit(L"");
+            Krisp::AudioSdk::globalInit(L"", nullptr, Krisp::AudioSdk::LogLevel::Off);
             _ptr = new KrispLibrary;
         }
         return _ptr;
@@ -40,8 +40,9 @@ public:
 
 
     Krisp::AudioSdk::VersionInfo getVersion() const {
-        Krisp::AudioSdk::VersionInfo info;
-        return Krisp::AudioSdk::getVersion(&info);
+        Krisp::AudioSdk::VersionInfo info {0};
+        Krisp::AudioSdk::getVersion(info);
+        return info;
     }
 
     ~KrispLibrary() {

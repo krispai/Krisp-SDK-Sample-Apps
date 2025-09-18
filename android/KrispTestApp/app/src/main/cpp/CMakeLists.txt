@@ -19,26 +19,41 @@ if (NOT DEFINED KRISP_SDK_ROOT)
     message(FATAL_ERROR "KRISP_SDK_ROOT not set")
 endif()
 
+if (NOT DEFINED KRISP_LINK_TYPE)
+    message(FATAL_ERROR "KRISP_LINK_TYPE is required")
+endif()
+
+if (NOT (KRISP_LINK_TYPE STREQUAL "static" OR KRISP_LINK_TYPE STREQUAL "dynamic"))
+    message(FATAL_ERROR "KRISP_LINK_TYPE should be set to static or dynamic '${KRISP_LINK_TYPE}'")
+endif()
+
 # Include Krisp headers
 include_directories(${KRISP_SDK_ROOT}/include)
 
-# ABI-specific lib paths
+# Resolve the path to the Krisp library.
+# KRISP_LINK_TYPE switches the link between Krisp static and dynamic libraries
 if (ANDROID_ABI STREQUAL "arm64-v8a")
-    set(KRISP_LIB_DIR ${KRISP_SDK_ROOT}/lib/arm64-v8a/static)
+    set(KRISP_LIB_DIR ${KRISP_SDK_ROOT}/lib/arm64-v8a/${KRISP_LINK_TYPE})
 elseif (ANDROID_ABI STREQUAL "armeabi-v7a")
-    set(KRISP_LIB_DIR ${KRISP_SDK_ROOT}/lib/armeabi-v7a/static)
+    set(KRISP_LIB_DIR ${KRISP_SDK_ROOT}/lib/armeabi-v7a/${KRISP_LINK_TYPE})
 elseif (ANDROID_ABI STREQUAL "x86_64")
-    set(KRISP_LIB_DIR ${KRISP_SDK_ROOT}/lib/x86_64/static)
+    set(KRISP_LIB_DIR ${KRISP_SDK_ROOT}/lib/x86_64/${KRISP_LINK_TYPE})
 else()
     message(FATAL_ERROR "Unsupported ABI: ${ANDROID_ABI}")
 endif()
 
-add_library(krisp-audio-sdk STATIC IMPORTED)
-set_target_properties(krisp-audio-sdk PROPERTIES
+if (KRISP_LINK_TYPE STREQUAL "static")
+    file(GLOB KRISP_EXTERNAL_LIBS "${KRISP_LIB_DIR}/external/*.a")
+    add_library(krisp-audio-sdk STATIC IMPORTED)
+    set_target_properties(krisp-audio-sdk PROPERTIES
         IMPORTED_LOCATION ${KRISP_LIB_DIR}/libkrisp-audio-sdk.a
-)
-
-file(GLOB KRISP_EXTERNAL_LIBS "${KRISP_LIB_DIR}/external/*.a")
+    )
+elseif (KRISP_LINK_TYPE STREQUAL "dynamic")
+    add_library(krisp-audio-sdk SHARED IMPORTED)
+    set_target_properties(krisp-audio-sdk PROPERTIES
+        IMPORTED_LOCATION ${KRISP_LIB_DIR}/libkrisp-audio-sdk.so
+    )
+endif()
 
 # Creates and names a library, sets it as either STATIC
 # or SHARED, and provides the relative paths to its source code.
@@ -55,11 +70,11 @@ file(GLOB KRISP_EXTERNAL_LIBS "${KRISP_LIB_DIR}/external/*.a")
 # used in the AndroidManifest.xml file.
 add_library(${CMAKE_PROJECT_NAME} SHARED
     # List C/C++ source files with relative paths to this CMakeLists.txt.
-        krisp.cpp)
-
+    krisp.cpp)
 
 target_link_libraries(${CMAKE_PROJECT_NAME}
     krisp-audio-sdk
     ${KRISP_EXTERNAL_LIBS}
     android
-    log)
+    log
+)
