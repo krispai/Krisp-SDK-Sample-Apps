@@ -10,4 +10,4 @@ else()
 	)
 endif()
 
-#list(APPEND KRISP_THIRDPARTY_LIBS blas)
+list(APPEND KRISP_THIRDPARTY_LIBS blas)
