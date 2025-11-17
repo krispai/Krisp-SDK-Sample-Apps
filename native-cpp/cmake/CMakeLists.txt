@@ -6,6 +6,26 @@ endif()
 
 project("Krisp SDK Sample Apps")
 
+# Option to build for Linux ARM64 architecture on Linux x64 host
+# Note: only krisp-wav-cli is supported (doesn't require libsndfile)
+# To cross build for ARM64: cmake -DCROSSBUILD_ARM64=ON ..
+option(CROSSBUILD_ARM64 "Build for ARM64 (aarch64) architecture" OFF)
+
+# Configure ARM64 cross-compilation if enabled. Must be done before defining targets and options.
+if(CROSSBUILD_ARM64)
+    if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
+        message(FATAL_ERROR
+            "CROSSBUILD_ARM64=ON but no CMAKE_TOOLCHAIN_FILE provided.\n"
+            "Configure with -DCMAKE_TOOLCHAIN_FILE=${CMAKE_CURRENT_SOURCE_DIR}/toolchain-arm64.cmake")
+    endif()
+    if(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
+        message(FATAL_ERROR "CROSSBUILD_ARM64=ON but current toolchain target is '${CMAKE_SYSTEM_PROCESSOR}'")
+    endif()
+	if (USE_KRISP_DYNAMIC_LIBRARY)
+		message(FATAL_ERROR "USE_KRISP_DYNAMIC_LIBRARY is not supported for cross-compilation yet")
+	endif()
+endif()
+
 # Set 'Release' or 'Debug'
 set(CMAKE_BUILD_TYPE Release)
 
@@ -70,6 +90,15 @@ if (USE_KRISP_DYNAMIC_LIBRARY)
 else()
 	set(KRISP_LIB_DIR ${KRISP_SDK_LOCAL}/lib/static)
 	set(KRISP_3PARTY_LIB_DIR ${KRISP_SDK_LOCAL}/lib/static/external)
+endif()
+
+if(CROSSBUILD_ARM64)
+    if(BUILD_SAMPLE_NC OR BUILD_SAMPLE_VAD OR BUILD_SAMPLE_AL)
+		message(FATAL_ERROR "ARM64 builds only support WAV_CLI app.")
+    endif()
+    if(NOT BUILD_WAV_CLI)
+		message(FATAL_ERROR "BUILD_WAV_CLI is not set for ARM64 cross-compilation")
+    endif()
 endif()
 
 # Krisp SDK libraries are applied to all targets
