@@ -445,14 +445,17 @@ void processWavData(Wav& w, SessionConfig& ncCfg, float noiseSuppressionLevel = 
     p.addArgument("--input", "-i", IMPORTANT);
     p.addArgument("--output", "-o", IMPORTANT);
     p.addArgument("--model_path", "-m", IMPORTANT);
-    p.addArgument("--suppress_level", "-sl", OPTIONAL);
+    p.addArgument("--suppress_level", "-sl", OPTIONAL_VALUE);
     if (p.parse())
     {
         input = p.getArgument("-i");
         output = p.getArgument("-o");
         weight = p.getArgument("-m");
-        const auto noiseSuppressionLevelStr = p.tryGetArgument("-sl", "100.0");
-        noiseSuppressionLevel = std::stof(noiseSuppressionLevelStr);
+        std::string noiseSuppressionLevelStr;
+        if (p.getOptionalArgumentValue("-sl", noiseSuppressionLevelStr))
+        {
+            noiseSuppressionLevel = std::stof(noiseSuppressionLevelStr);
+        }
     }
     else
     {

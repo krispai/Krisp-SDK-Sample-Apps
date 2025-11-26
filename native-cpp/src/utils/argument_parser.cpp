@@ -43,14 +43,24 @@ bool ArgumentParser::parse() {
 				others.push_back(argv[i]);
 			}
 		} else {
-			if (r->second.type == OPTIONAL) {
+            Map::iterator p_it = arguments.find(r->second.pair);
+			if (r->second.type == OPTIONAL_NOVALUE) {
 				r->second.opt = true;
-				Map::iterator p_it = arguments.find(r->second.pair);
 				p_it->second.opt = true;
+			} else if (r->second.type == OPTIONAL_VALUE) {
+				r->second.opt = true;
+				p_it->second.opt = true;
+				if (i + 1 < argc) {
+					Map::iterator next = arguments.find(argv[i + 1]);
+					if (arguments.end() == next) {
+						++i;
+						r->second.value = argv[i];
+						p_it->second.value = argv[i];
+					}
+				}
 			} else if (i + 1 < argc) {
 				++i;
 				r->second.value = argv[i];
-				Map::iterator p_it = arguments.find(r->second.pair);
 				p_it->second.value = argv[i];
 			} else {
 				error = std::string("Non value for: ") + argv[i] + "!";
@@ -72,6 +82,17 @@ bool ArgumentParser::getOptionalArgument(const std::string& k) const {
 	Map::const_iterator r = arguments.find(k);
 	if (arguments.end() != r) {
 		return r->second.opt;
+	}
+	return false;
+}
+
+bool ArgumentParser::getOptionalArgumentValue(const std::string& k, std::string& out) const {
+	Map::const_iterator r = arguments.find(k);
+	if (arguments.end() != r) {
+		if (r->second.opt && !r->second.value.empty()) {
+			out = r->second.value;
+			return true;
+		}
 	}
 	return false;
 }

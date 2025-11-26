@@ -13,6 +13,7 @@
 
 
 using Krisp::AudioSdk::NcSessionConfig;
+using Krisp::AudioSdk::RingtoneCfg;
 using Krisp::AudioSdk::Nc;
 using Krisp::AudioSdk::ModelInfo;
 using Krisp::AudioSdk::FrameDuration;
@@ -23,23 +24,30 @@ using Krisp::AudioSdk::PerFrameStats;
 using Krisp::AudioSdk::SessionStats;
 
 static bool parseArguments(std::string &input, std::string &output,
-                           std::string &weight, float &noiseSuppressionLevel, bool &stats, int argc, char **argv)
+                           std::string &modelPath, std::string &ringtoneModelPath,
+                           float &noiseSuppressionLevel, bool &stats, int argc, char **argv)
 {
     ArgumentParser p(argc, argv);
     p.addArgument("--input", "-i", IMPORTANT);
     p.addArgument("--output", "-o", IMPORTANT);
     p.addArgument("--model_path", "-m", IMPORTANT);
-    p.addArgument("--suppress_level", "-sl", OPTIONAL);
-    p.addArgument("--stats", "-s", OPTIONAL);
+    p.addArgument("--suppress_level", "-sl", OPTIONAL_VALUE);
+    p.addArgument("--stats", "-s", OPTIONAL_NOVALUE);
+    p.addArgument("--ringtone", "-r", OPTIONAL_VALUE);
     if (p.parse())
     {
         input = p.getArgument("-i");
         output = p.getArgument("-o");
-        weight = p.getArgument("-m");
+        modelPath = p.getArgument("-m");
         stats = p.getOptionalArgument("-s");
 
-        const auto noiseSuppressionLevelStr = p.tryGetArgument("-sl", "100.0");
-        noiseSuppressionLevel = std::stof(noiseSuppressionLevelStr);
+        std::string noiseSuppressionLevelStr;
+        if (p.getOptionalArgumentValue("-sl", noiseSuppressionLevelStr))
+        {
+            noiseSuppressionLevel = std::stof(noiseSuppressionLevelStr);
+        }
+
+        p.getOptionalArgumentValue("-r", ringtoneModelPath);
     }
     else
     {
@@ -70,7 +78,8 @@ template <typename SamplingFormat>
 int ncWavFileTmpl(
     const SoundFile &inSndFile,
     const std::string &output,
-    const std::string &weight,
+    const std::string &modelPath,
+    const std::string &ringtoneModelPath,
     float noiseSuppressionLevel,
     bool withStats)
 {
@@ -102,17 +111,27 @@ int ncWavFileTmpl(
         std::wstring_convert<std::codecvt_utf8<wchar_t>> wstringConverter;
 
         ModelInfo ncModelInfo;
-        ncModelInfo.path = wstringConverter.from_bytes(weight);
+        ncModelInfo.path = wstringConverter.from_bytes(modelPath);
+
+        RingtoneCfg ringtoneCfg;
+        RingtoneCfg* ringtoneCfgPtr = nullptr;
+        if (!ringtoneModelPath.empty())
+        {
+            ringtoneCfg.modelInfo.path = wstringConverter.from_bytes(ringtoneModelPath);
+            ringtoneCfg.modelInfo.blob.first = nullptr;
+            ringtoneCfg.modelInfo.blob.second = 0;
+            ringtoneCfgPtr = &ringtoneCfg;
+        }
 
         NcSessionConfig ncCfg =
-            {
-                inRate,
-                frameDurationMillis,
-                outRate,
-                &ncModelInfo,
-                withStats,
-                nullptr // Ringtone model cfg for inbound
-            };
+        {
+            inRate,
+            frameDurationMillis,
+            outRate,
+            &ncModelInfo,
+            withStats,
+            ringtoneCfgPtr
+        };
 
         std::shared_ptr<Nc<SamplingFormat>> ncSession = Nc<SamplingFormat>::create(ncCfg);
 
@@ -187,7 +206,8 @@ int ncWavFileTmpl(
 }
 
 static int ncWavFile(const std::string &input, const std::string &output,
-                     const std::string &weight, float noiseSuppressionLevel, bool withStats)
+                     const std::string &modelPath, const std::string &ringtoneModelPath,
+                     float noiseSuppressionLevel, bool withStats)
 {
     SoundFile inSndFile;
     inSndFile.loadHeader(input);
@@ -198,11 +218,11 @@ static int ncWavFile(const std::string &input, const std::string &output,
     auto sndFileHeader = inSndFile.getHeader();
     if (sndFileHeader.getFormat() == SoundFileFormat::PCM16)
     {
-        return ncWavFileTmpl<int16_t>(inSndFile, output, weight, noiseSuppressionLevel, withStats);
+        return ncWavFileTmpl<int16_t>(inSndFile, output, modelPath, ringtoneModelPath, noiseSuppressionLevel, withStats);
     }
     if (sndFileHeader.getFormat() == SoundFileFormat::FLOAT)
     {
-        return ncWavFileTmpl<float>(inSndFile, output, weight, noiseSuppressionLevel, withStats);
+        return ncWavFileTmpl<float>(inSndFile, output, modelPath, ringtoneModelPath, noiseSuppressionLevel, withStats);
     }
     return error("The sound file format should be PCM16 or FLOAT.");
 }
@@ -211,17 +231,27 @@ int main(int argc, char **argv)
 {
     std::string in;
     std::string out;
-    std::string weight;
+    std::string modelPath;
+    std::string ringtoneModelPath;
     float noiseSuppressionLevel = 100;
     bool stats = false;
 
-    if (parseArguments(in, out, weight, noiseSuppressionLevel, stats, argc, argv))
+    if (parseArguments(in, out, modelPath, ringtoneModelPath, noiseSuppressionLevel, stats, argc, argv))
     {
-        return ncWavFile(in, out, weight, noiseSuppressionLevel, stats);
+        return ncWavFile(in, out, modelPath, ringtoneModelPath, noiseSuppressionLevel, stats);
     }
     else
     {
-        std::cerr << "\nUsage:\n\t" << argv[0] << " -i input.wav -o output.wav -m model_path" << std::endl;
+        std::cerr << "\nUsage:\n";
+        std::cerr << "\t" << argv[0] << " -i <input.wav> -o <output.wav> -m <model_path> [options]\n\n";
+        std::cerr << "\tRequired arguments:\n";
+        std::cerr << "\t  -i, --input PATH             Input wav file path\n";
+        std::cerr << "\t  -o, --output PATH            Output wav file path\n";
+        std::cerr << "\t  -m, --model_path PATH        Noise cancelling model file\n\n";
+        std::cerr << "\tOptional arguments:\n";
+        std::cerr << "\t  -r, --ringtone PATH          Ringtone detection model file\n";
+        std::cerr << "\t  -sl, --suppress_level VALUE  Noise suppression level (default 100)\n";
+        std::cerr << "\t  -s, --stats                  Print per-frame and session stats\n";
         if (argc == 1)
         {
             return 0;

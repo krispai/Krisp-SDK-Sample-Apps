@@ -11,9 +11,9 @@
 
 
 enum ArgType {
-	OPTIONAL,
-	IMPORTANT,
-	DEFAULT
+	OPTIONAL_NOVALUE,
+	OPTIONAL_VALUE,
+	IMPORTANT
 };
 
 class ArgValue {
@@ -47,9 +47,10 @@ private:
 	bool ignore_others;
 public:
 	void addArgument(const std::string& l, const std::string& s,
-		const ArgType t=DEFAULT);
+		const ArgType t=IMPORTANT);
 	bool parse();
 	bool getOptionalArgument(const std::string& k) const;
+		bool getOptionalArgumentValue(const std::string& k, std::string& out) const;
 	const std::string& getArgument(const std::string& k) const;
 	const std::string& tryGetArgument(const std::string& k,
 		const std::string& d) const;
