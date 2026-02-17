@@ -113,11 +113,11 @@ else()
 		libopenblas.a
 		libresample.a
 	)
-
+	
 	if (BUILD_SAMPLE_VT)
 		list(APPEND EXTERNAL_LIBS libdaily-core-sdk-wrapper.dylib)
 	endif()
-	
+
 	# When ENABLE_LICENSING is on or BUILD_SAMPLE_VT is on, add libcurl.a
 	if (ENABLE_LICENSING or BUILD_SAMPLE_VT)
 		list(APPEND EXTERNAL_LIBS libcurl.a)

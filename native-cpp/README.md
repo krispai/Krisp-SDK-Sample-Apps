@@ -21,6 +21,7 @@ The build system uses CMake.
 * sample-dll: Builds a dynamic library (`libkrispdll`) and a minimal test app
 * sample-node: Node.js addon and sample app that processes WAV via N-API using Krisp C++ SDK
 * sample-python: CPython module and script that processes WAV via pybind11 using Krisp C++ SDK
+* sample-vt: CLI WAV voice translation using Krisp VT (PCM16/FLOAT32)
 
 ## Third-party Dependencies per App
 
@@ -32,12 +33,15 @@ The build system uses CMake.
 | bin/sample-node | `-DBUILD_SAMPLE_NODEJS=ON` | Node v20+, N-API 9, `NODE_INC`, `node-addon-api` (npm) | Runs `npm install` |
 | bin/sample-python | `-DBUILD_SAMPLE_PYTHON=ON` | Python3 Dev + NumPy, `pybind11` | Builds `krisp_module` |
 | bin/sample-dll | N/A (VS solution) | none | Built via `vs-solution` |
+| bin/sample-vt | `-DBUILD_SAMPLE_VT=ON` | `libsndfile` (set `LIBSNDFILE_INC`, `LIBSNDFILE_LIB`) | WAV I/O |
 
 ## Using CMake
 
 ### Options
 
 - `-DCOPY_KRISP_SDK=<path>`: Copy SDK into the `krisp-sdk/` folder. Use this once.
+- `-DUSE_KRISP_DYNAMIC_LIBRARY=ON|OFF`: Use Krisp dynamic library. Krisp static libraries are used by default.
+- `-DCMAKE_MSVC_RUNTIME_LIBRARY=<value>`: (Windows only) MSVC runtime library type. Must match the Krisp SDK libraries: `MultiThreaded` (static release), `MultiThreadedDebug` (static debug), `MultiThreadedDLL` (dynamic release), or `MultiThreadedDebugDLL` (dynamic debug).
 - `-DBUILD_SAMPLE_NC=ON|OFF`: Build `bin/sample-nc`.
 - `-DBUILD_WAV_CLI=ON|OFF`: Build `bin/krisp-wav-cli` (from `src/wav-cli`).
 - `-DBUILD_SAMPLE_VAD=ON|OFF`: Build `bin/sample-vad`.
@@ -72,6 +76,38 @@ cmake -DBUILD_WAV_CLI=ON -DENABLE_ACCENT=OFF -DCOPY_KRISP_SDK=/home/atatalyan/de
 cd build 
 make
 ```
+
+#### Windows Build
+
+Windows builds require specifying the MSVC runtime library to match the Krisp SDK libraries. The SDK naming convention indicates the runtime:
+- `win_x64_mt` or `win_x64_mtd`: Static runtime (MultiThreaded / MultiThreadedDebug)
+- `win_x64_md` or `win_x64_mdd`: Dynamic runtime (MultiThreadedDLL / MultiThreadedDebugDLL)
+
+**Static Runtime Build (Debug):**
+```
+cmake -S ./cmake -B ./build -DBUILD_WAV_CLI=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDebug -DCOPY_KRISP_SDK=krisp-audio-sdk-9.11.0-win_x64_mtd-nc
+cmake --build ./build --config Debug
+```
+
+**Static Runtime Build (Release):**
+```
+cmake -S ./cmake -B ./build -DBUILD_WAV_CLI=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded -DCOPY_KRISP_SDK=krisp-audio-sdk-9.11.0-win_x64_mt-nc
+cmake --build ./build --config Release
+```
+
+**Dynamic Runtime Build (Debug):**
+```
+cmake -S ./cmake -B ./build -DBUILD_WAV_CLI=ON -DCMAKE_BUILD_TYPE=Debug -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDebugDLL -DCOPY_KRISP_SDK=krisp-audio-sdk-9.11.0-win_x64_mdd-nc
+cmake --build ./build --config Debug
+```
+
+**Dynamic Runtime Build (Release):**
+```
+cmake -S ./cmake -B ./build -DBUILD_WAV_CLI=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDLL -DCOPY_KRISP_SDK=krisp-audio-sdk-9.11.0-win_x64_md-nc
+cmake --build ./build --config Release
+```
+
+**Note:** The `CMAKE_MSVC_RUNTIME_LIBRARY` option must match the runtime library used by the Krisp SDK libraries. Mismatched runtime libraries will cause linker errors.
 
 ### Troubleshooting
 #### Error Krisp SDK already exists

@@ -42,7 +42,7 @@ float pcmToFloat<int32_t>(int32_t sample) {
 }
 
 template<>
-float pcmToFloat<float>(float sample) {
+[[maybe_unused]] float pcmToFloat<float>(float sample) {
     return sample;
 }
 
@@ -64,7 +64,7 @@ int32_t floatToPcm<int32_t>(float sample) {
 }
 
 template<>
-float floatToPcm<float>(float sample) {
+[[maybe_unused]] float floatToPcm<float>(float sample) {
     return sample;
 }
 
@@ -189,7 +189,7 @@ Wav readWav(const std::string& path) {
                 w.chunks.headerAndBeforeData.end(), sizeLE, sizeLE+4);
             size_t toRead = sz + (sz & 1);
             std::vector<uint8_t> buf(toRead);
-            in.read((char*)buf.data(), toRead);
+            in.read((char*)buf.data(), static_cast<std::streamsize>(toRead));
             w.chunks.headerAndBeforeData.insert(
                 w.chunks.headerAndBeforeData.end(), buf.begin(), buf.end());
 
@@ -208,7 +208,7 @@ Wav readWav(const std::string& path) {
                 w.chunks.trailer.end(), sizeLE, sizeLE+4);
             size_t toRead = sz + (sz & 1);
             std::vector<uint8_t> buf(toRead);
-            in.read((char*)buf.data(), toRead);
+            in.read((char*)buf.data(), static_cast<std::streamsize>(toRead));
             w.chunks.trailer.insert(
                 w.chunks.trailer.end(), buf.begin(), buf.end());
         }
@@ -254,7 +254,7 @@ void writeWav(const std::string& path, Wav& w) {
     // write out
     std::ofstream out(path, std::ios::binary);
     out.write((char*)w.chunks.headerAndBeforeData.data(),
-                w.chunks.headerAndBeforeData.size());
+                static_cast<std::streamsize>(w.chunks.headerAndBeforeData.size()));
     if (w.fmtAudioFormat == 1 && w.fmtBitDepth == 16) {
         // PCM16
         out.write((char*)w.samples16.data(), dataBytes);
@@ -272,7 +272,7 @@ void writeWav(const std::string& path, Wav& w) {
     }
     if (!w.chunks.trailer.empty())
         out.write((char*)w.chunks.trailer.data(),
-                    w.chunks.trailer.size());
+                    static_cast<std::streamsize>(w.chunks.trailer.size()));
 }
 
 template<typename SessionConfig>
@@ -462,7 +462,7 @@ void processWavData(Wav& w, SessionConfig& ncCfg, float noiseSuppressionLevel = 
     return true;
 }
 
-bool detectAccent(const std::string& modelPath) {
+[[maybe_unused]] bool detectAccent(const std::string& modelPath) {
     const std::string pathSeparators = "/\\";
     size_t lastSeparatorPos = modelPath.find_last_of(pathSeparators);
     std::string fileName;
@@ -478,7 +478,7 @@ bool detectAccent(const std::string& modelPath) {
     return isAccentModel;
 }
 
-#ifdef ENABLE_ACCENT
+#if ENABLE_ACCENT
 Krisp::AudioSdk::ArSessionConfig createArConfig(Krisp::AudioSdk::ModelInfo& modelInfo, Krisp::AudioSdk::SamplingRate rate) {
     Krisp::AudioSdk::ArSessionConfig arCfg =
     {
@@ -504,7 +504,21 @@ Krisp::AudioSdk::NcSessionConfig createNcConfig(Krisp::AudioSdk::ModelInfo& mode
 }
 }
 
-int main(int argc, char* argv[]) {
+void logCallback(const std::string& message, [[maybe_unused]] Krisp::AudioSdk::LogLevel level)
+{
+    
+    std::cout << message << std::endl;
+}
+
+#if ENABLE_LICENSING
+void licensingErrorCallback(Krisp::AudioSdk::LicensingError error, const std::string& errorMessage)
+{
+    std::cout << "Licensing error: " << static_cast<int>(error) << " - " << errorMessage << std::endl;
+}
+#endif
+
+int main(int argc, char* argv[])
+{
     std::string in;
     std::string out;
     std::string model;
@@ -514,15 +528,21 @@ int main(int argc, char* argv[]) {
         std::cerr << "\nUsage:\n\t" << argv[0] << " -i input.wav -o output.wav -m model_path" << std::endl;
         return -1;
     }
-    try {
+    try
+    {
         auto wav = readWav(in);
         
         std::string formatName;
-        if (wav.fmtAudioFormat == 1) {
+        if (wav.fmtAudioFormat == 1)
+        {
             formatName = "PCM";
-        } else if (wav.fmtAudioFormat == 3) {
+        }
+        else if (wav.fmtAudioFormat == 3)
+        {
             formatName = "IEEE Float";
-        } else {
+        }
+        else
+        {
             formatName = "Unknown (" + std::to_string(wav.fmtAudioFormat) + ")";
         }
         
@@ -531,7 +551,11 @@ int main(int argc, char* argv[]) {
                   << "   Bits/sample: " << wav.fmtBitDepth 
                   << "   Sample rate: " << wav.fmtSampleRate << " Hz\n";
 
-        Krisp::AudioSdk::globalInit(L"");
+#if ENABLE_LICENSING
+        Krisp::AudioSdk::globalInit(L"", "", licensingErrorCallback, logCallback, Krisp::AudioSdk::LogLevel::Off);
+#else
+        Krisp::AudioSdk::globalInit(L"", logCallback, Krisp::AudioSdk::LogLevel::Off);
+#endif
 
         std::wstring_convert<std::codecvt_utf8<wchar_t>> wstringConverter;
         Krisp::AudioSdk::ModelInfo modelInfo;
@@ -542,7 +566,7 @@ int main(int argc, char* argv[]) {
         {
             return error("Unsupported sample rate");
         }
-#ifdef ENABLE_ACCENT
+#if ENABLE_ACCENT
         if (detectAccent(model)) {
             auto arCfg = createArConfig(modelInfo, samplingRateResult.first);
             processWavData(wav, arCfg);
@@ -551,7 +575,7 @@ int main(int argc, char* argv[]) {
 #endif
             auto ncCfg = createNcConfig(modelInfo, samplingRateResult.first);
             processWavData(wav, ncCfg, noiseSuppressionLevel);
-#ifdef ENABLE_ACCENT
+#if ENABLE_ACCENT
         }
 #endif
         Krisp::AudioSdk::globalDestroy();
