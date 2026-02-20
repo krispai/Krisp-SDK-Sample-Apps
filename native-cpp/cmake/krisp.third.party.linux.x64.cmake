@@ -110,13 +110,28 @@ else()
 		libnsync.a
 		libnsync_cpp.a
 		libcpuinfo.a
-		libcrypto.a
 		libopenblas.a
 		libresample.a
-		libssl.a
 	)
+
+	if (BUILD_SAMPLE_VT)
+		list(APPEND EXTERNAL_LIBS libdaily-core-sdk-wrapper.dylib)
+	endif()
+	
+	# When ENABLE_LICENSING is on or BUILD_SAMPLE_VT is on, add libcurl.a
+	if (ENABLE_LICENSING or BUILD_SAMPLE_VT)
+		list(APPEND EXTERNAL_LIBS libcurl.a)
+	endif()
+	# libcrypto and libssl are required in all cases and should be linked at the end
+	# When ENABLE_LICENSING is on or BUILD_SAMPLE_VT is on, libcurl.a also needs libz.a - add it after libcurl.a
+	if (ENABLE_LICENSING or BUILD_SAMPLE_VT)
+		list(APPEND EXTERNAL_LIBS libz.a)
+	endif()
+	# Always add crypto and ssl at the end for proper linking order
+	list(APPEND EXTERNAL_LIBS libssl.a libcrypto.a)
 	set(KRISP_THIRDPARTY_LIBS)
 	foreach(lib ${EXTERNAL_LIBS})
 		list(APPEND KRISP_THIRDPARTY_LIBS "${KRISP_3PARTY_LIB_DIR}/${lib}")
 	endforeach()
+	list(APPEND KRISP_THIRDPARTY_LIBS -pthread -ldl)
 endif()

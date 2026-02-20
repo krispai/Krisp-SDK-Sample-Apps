@@ -1,5 +1,8 @@
 if (APPLE)
 	link_libraries("-framework CoreFoundation" "-framework Foundation")
+	if (ENABLE_LICENSING OR BUILD_SAMPLE_VT)
+		link_libraries("-framework Security" "-framework SystemConfiguration")
+	endif()
 endif()
 
 # Use the SDK paths (set in CMakeLists.txt based on KRISP_COPY_SDK option)
