@@ -11,9 +11,9 @@ if(WIN32)
 	message(STATUS "MSVC runtime library will be set to: ${CMAKE_MSVC_RUNTIME_LIBRARY}")
 endif()
 
-include(compile.settings.cmake)
+project("Krisp SDK Sample Apps" LANGUAGES C CXX)
 
-project("Krisp SDK Sample Apps")
+include(compile.settings.cmake)
 
 if(NOT DEFINED CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE Release)
@@ -42,6 +42,8 @@ if(UNIX OR APPLE)
 			-Wno-deprecated-declarations
 			-Wno-padded
 			-Wno-undefined-func-template
+			# Apple Clang implicitly adds -I/usr/local/include
+			-Wno-poison-system-directories
 		)
     endif()
 endif()
@@ -202,10 +204,10 @@ if (BUILD_WAV_CLI)
 		message(STATUS "Target ${APPNAME_WAV_CLI} runtime library: ${CMAKE_MSVC_RUNTIME_LIBRARY}")
 	endif()
 	if (ENABLE_ACCENT)
-		set_target_properties(${APPNAME_WAV_CLI} PROPERTIES COMPILE_DEFINITIONS "ENABLE_ACCENT")
+		target_compile_definitions(${APPNAME_WAV_CLI} PRIVATE ENABLE_ACCENT)
 	endif()
 	if (ENABLE_LICENSING)
-		set_target_properties(${APPNAME_WAV_CLI} PROPERTIES COMPILE_DEFINITIONS "ENABLE_LICENSING")
+		target_compile_definitions(${APPNAME_WAV_CLI} PRIVATE ENABLE_LICENSING)
 	endif()
 	target_include_directories(
 		${APPNAME_WAV_CLI}

@@ -1,6 +1,3 @@
-enable_language(C)
-enable_language(CXX)
-
 # Set the C++ standard globally
 set(CMAKE_CXX_STANDARD 17)
 

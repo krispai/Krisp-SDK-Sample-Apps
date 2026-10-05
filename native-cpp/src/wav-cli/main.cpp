@@ -126,7 +126,7 @@ Wav readWav(const std::string& path) {
         throw std::runtime_error("Cannot open \"" + path + "\"");
     }
     uint8_t riffHeader[12];
-    in.read((char*)riffHeader, 12);
+    in.read(reinterpret_cast<char*>(riffHeader), 12);
     if (in.gcount() != 12
         || std::memcmp(riffHeader, "RIFF", 4)
         || std::memcmp(riffHeader+8, "WAVE", 4)) {
@@ -142,12 +142,12 @@ Wav readWav(const std::string& path) {
     // Walk chunks
     while (true) {
         uint8_t id[4], sizeLE[4];
-        in.read((char*)id, 4);
+        in.read(reinterpret_cast<char*>(id), 4);
         if (in.gcount() == 0) {
             break;
         }
         if (in.gcount() != 4) throw std::runtime_error("Unexpected EOF (chunk id)");
-        in.read((char*)sizeLE, 4);
+        in.read(reinterpret_cast<char*>(sizeLE), 4);
         if (in.gcount() != 4) throw std::runtime_error("Unexpected EOF (chunk size)");
 
         uint32_t sz = readLE32(sizeLE);
@@ -165,13 +165,13 @@ Wav readWav(const std::string& path) {
             // Read audio data into buffer
             if (w.fmtAudioFormat == 1 && w.fmtBitDepth == 16) {
                 w.samples16.resize(sz / 2);
-                in.read((char*)w.samples16.data(), sz);
+                in.read(reinterpret_cast<char*>(w.samples16.data()), sz);
             } else if (w.fmtAudioFormat == 1 && w.fmtBitDepth == 32) {
                 w.samples32.resize(sz / 4);
-                in.read((char*)w.samples32.data(), sz);
+                in.read(reinterpret_cast<char*>(w.samples32.data()), sz);
             } else if (w.fmtAudioFormat == 3 && w.fmtBitDepth == 32) {
                 w.samplesF.resize(sz / 4);
-                in.read((char*)w.samplesF.data(), sz);
+                in.read(reinterpret_cast<char*>(w.samplesF.data()), sz);
             } else {
                 throw UnsupportedFormatError(w.fmtAudioFormat, w.fmtBitDepth);
             }
@@ -189,7 +189,7 @@ Wav readWav(const std::string& path) {
                 w.chunks.headerAndBeforeData.end(), sizeLE, sizeLE+4);
             size_t toRead = sz + (sz & 1);
             std::vector<uint8_t> buf(toRead);
-            in.read((char*)buf.data(), static_cast<std::streamsize>(toRead));
+            in.read(reinterpret_cast<char*>(buf.data()), static_cast<std::streamsize>(toRead));
             w.chunks.headerAndBeforeData.insert(
                 w.chunks.headerAndBeforeData.end(), buf.begin(), buf.end());
 
@@ -208,7 +208,7 @@ Wav readWav(const std::string& path) {
                 w.chunks.trailer.end(), sizeLE, sizeLE+4);
             size_t toRead = sz + (sz & 1);
             std::vector<uint8_t> buf(toRead);
-            in.read((char*)buf.data(), static_cast<std::streamsize>(toRead));
+            in.read(reinterpret_cast<char*>(buf.data()), static_cast<std::streamsize>(toRead));
             w.chunks.trailer.insert(
                 w.chunks.trailer.end(), buf.begin(), buf.end());
         }
@@ -225,15 +225,21 @@ uint32_t getWavDataSize(const Wav& w) {
                     return uint32_t(w.samples16.size() * sizeof(int16_t));
                 case 32: // PCM32
                     return uint32_t(w.samples32.size() * sizeof(int32_t));
+                default:
+                    break;
             }
             break;
         case 3: // PCM FLOAT
             switch (w.fmtBitDepth) {
                 case 32: // PCM FLOAT (32 bit)
                     return uint32_t(w.samplesF.size() * sizeof(float));
+                default:
+                    break;
             }
             break;
-    }   
+        default:
+            break;
+    }
     throw UnsupportedFormatError(w.fmtAudioFormat, w.fmtBitDepth);
 }
 
@@ -253,25 +259,25 @@ void writeWav(const std::string& path, Wav& w) {
 
     // write out
     std::ofstream out(path, std::ios::binary);
-    out.write((char*)w.chunks.headerAndBeforeData.data(),
+    out.write(reinterpret_cast<const char*>(w.chunks.headerAndBeforeData.data()),
                 static_cast<std::streamsize>(w.chunks.headerAndBeforeData.size()));
     if (w.fmtAudioFormat == 1 && w.fmtBitDepth == 16) {
         // PCM16
-        out.write((char*)w.samples16.data(), dataBytes);
+        out.write(reinterpret_cast<const char*>(w.samples16.data()), dataBytes);
     }
     else if (w.fmtAudioFormat == 1 && w.fmtBitDepth == 32) {
         // PCM32
-        out.write((char*)w.samples32.data(), dataBytes);
+        out.write(reinterpret_cast<const char*>(w.samples32.data()), dataBytes);
     }
     else if (w.fmtAudioFormat == 3 && w.fmtBitDepth == 32) {
         // PCM FLOAT (32 bit)
-        out.write((char*)w.samplesF .data(), dataBytes);
+        out.write(reinterpret_cast<const char*>(w.samplesF.data()), dataBytes);
     }
     else {
         throw UnsupportedFormatError(w.fmtAudioFormat, w.fmtBitDepth);
     }
     if (!w.chunks.trailer.empty())
-        out.write((char*)w.chunks.trailer.data(),
+        out.write(reinterpret_cast<const char*>(w.chunks.trailer.data()),
                     static_cast<std::streamsize>(w.chunks.trailer.size()));
 }
 
@@ -425,6 +431,8 @@ void processWavData(Wav& w, SessionConfig& ncCfg, float noiseSuppressionLevel = 
                 case 32: // PCM32
                     processMultiChannelAudio(w.samples32, frameSize, w.fmtChannels, ncCfg, noiseSuppressionLevel);
                     return;
+                default:
+                    break;
             }
             break;
         case 3: // PCM FLOAT
@@ -432,20 +440,28 @@ void processWavData(Wav& w, SessionConfig& ncCfg, float noiseSuppressionLevel = 
                 case 32: // PCM FLOAT (32 bit)
                     processMultiChannelAudio(w.samplesF, frameSize, w.fmtChannels, ncCfg, noiseSuppressionLevel);
                     return;
+                default:
+                    break;
             }
+            break;
+        default:
             break;
     }
     throw UnsupportedFormatError(w.fmtAudioFormat, w.fmtBitDepth);
 }
 
 [[nodiscard]] static bool parseArguments(std::string &input, std::string &output,
-                            std::string &weight, float &noiseSuppressionLevel, int argc, char **argv)
+                            std::string &weight, float &noiseSuppressionLevel,
+                            [[maybe_unused]] std::string &licenseKey, int argc, char **argv)
 {
     ArgumentParser p(argc, argv);
     p.addArgument("--input", "-i", IMPORTANT);
     p.addArgument("--output", "-o", IMPORTANT);
     p.addArgument("--model_path", "-m", IMPORTANT);
     p.addArgument("--suppress_level", "-sl", OPTIONAL);
+#ifdef ENABLE_LICENSING
+    p.addArgument("--license_key", "-lk", IMPORTANT);
+#endif
     if (p.parse())
     {
         input = p.getArgument("-i");
@@ -453,6 +469,9 @@ void processWavData(Wav& w, SessionConfig& ncCfg, float noiseSuppressionLevel = 
         weight = p.getArgument("-m");
         const auto noiseSuppressionLevelStr = p.tryGetArgument("-sl", "100.0");
         noiseSuppressionLevel = std::stof(noiseSuppressionLevelStr);
+#ifdef ENABLE_LICENSING
+        licenseKey = p.getArgument("-lk");
+#endif
     }
     else
     {
@@ -471,14 +490,14 @@ void processWavData(Wav& w, SessionConfig& ncCfg, float noiseSuppressionLevel = 
     } else {
         fileName = modelPath;
     }
-    const std::string accentPrefix = "ar_";
+    const std::string accentPrefix = "krisp-rtc-ac-";
     const size_t prefixLength = accentPrefix.length();
     bool isAccentModel = (fileName.length() >= prefixLength) && 
                         (fileName.substr(0, prefixLength) == accentPrefix);
     return isAccentModel;
 }
 
-#if ENABLE_ACCENT
+#ifdef ENABLE_ACCENT
 Krisp::AudioSdk::ArSessionConfig createArConfig(Krisp::AudioSdk::ModelInfo& modelInfo, Krisp::AudioSdk::SamplingRate rate) {
     Krisp::AudioSdk::ArSessionConfig arCfg =
     {
@@ -504,14 +523,14 @@ Krisp::AudioSdk::NcSessionConfig createNcConfig(Krisp::AudioSdk::ModelInfo& mode
 }
 }
 
-void logCallback(const std::string& message, [[maybe_unused]] Krisp::AudioSdk::LogLevel level)
+static void logCallback(const std::string& message, [[maybe_unused]] Krisp::AudioSdk::LogLevel level)
 {
     
     std::cout << message << std::endl;
 }
 
-#if ENABLE_LICENSING
-void licensingErrorCallback(Krisp::AudioSdk::LicensingError error, const std::string& errorMessage)
+#ifdef ENABLE_LICENSING
+static void licensingErrorCallback(Krisp::AudioSdk::LicensingError error, const std::string& errorMessage)
 {
     std::cout << "Licensing error: " << static_cast<int>(error) << " - " << errorMessage << std::endl;
 }
@@ -523,9 +542,14 @@ int main(int argc, char* argv[])
     std::string out;
     std::string model;
     float noiseSuppressionLevel = 100.0;
-    if (!parseArguments(in,out, model, noiseSuppressionLevel,argc,argv))
+    std::string licenseKey;
+    if (!parseArguments(in,out, model, noiseSuppressionLevel, licenseKey, argc,argv))
     {
-        std::cerr << "\nUsage:\n\t" << argv[0] << " -i input.wav -o output.wav -m model_path" << std::endl;
+        std::cerr << "\nUsage:\n\t" << argv[0] << " -i input.wav -o output.wav -m model_path"
+#ifdef ENABLE_LICENSING
+                  << " -lk license_key"
+#endif
+                  << std::endl;
         return -1;
     }
     try
@@ -551,8 +575,8 @@ int main(int argc, char* argv[])
                   << "   Bits/sample: " << wav.fmtBitDepth 
                   << "   Sample rate: " << wav.fmtSampleRate << " Hz\n";
 
-#if ENABLE_LICENSING
-        Krisp::AudioSdk::globalInit(L"", "", licensingErrorCallback, logCallback, Krisp::AudioSdk::LogLevel::Off);
+#ifdef ENABLE_LICENSING
+        Krisp::AudioSdk::globalInit(L"", licenseKey, licensingErrorCallback, logCallback, Krisp::AudioSdk::LogLevel::Off);
 #else
         Krisp::AudioSdk::globalInit(L"", logCallback, Krisp::AudioSdk::LogLevel::Off);
 #endif
@@ -566,7 +590,7 @@ int main(int argc, char* argv[])
         {
             return error("Unsupported sample rate");
         }
-#if ENABLE_ACCENT
+#ifdef ENABLE_ACCENT
         if (detectAccent(model)) {
             auto arCfg = createArConfig(modelInfo, samplingRateResult.first);
             processWavData(wav, arCfg);
@@ -575,7 +599,7 @@ int main(int argc, char* argv[])
 #endif
             auto ncCfg = createNcConfig(modelInfo, samplingRateResult.first);
             processWavData(wav, ncCfg, noiseSuppressionLevel);
-#if ENABLE_ACCENT
+#ifdef ENABLE_ACCENT
         }
 #endif
         Krisp::AudioSdk::globalDestroy();
