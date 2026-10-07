@@ -1,4 +1,6 @@
 #import <Foundation/Foundation.h>
+#import <mach/mach.h>
+#import <malloc/malloc.h>
 
 #import "KrispAudioProcessor.h"
 #include "KrispAudioSDK/krisp-audio-sdk.hpp"
@@ -117,6 +119,70 @@ static std::pair<Krisp::AudioSdk::SamplingRate, bool> getKrispSampleRate(uint32_
 
 @end
 
+
+#pragma mark - KrispLeakRepro
+
+static double reproLiveMallocMiB(void) {
+    malloc_statistics_t stats;
+    malloc_zone_statistics(NULL, &stats);
+    return stats.size_in_use / 1048576.0;
+}
+
+static double reproFootprintMiB(void) {
+    task_vm_info_data_t info;
+    mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
+    if (task_info(mach_task_self(), TASK_VM_INFO, (task_info_t)&info, &count) != KERN_SUCCESS) {
+        return 0;
+    }
+    return info.phys_footprint / 1048576.0;
+}
+
+@implementation KrispLeakRepro
+
++ (NSString *)runWithModelData:(NSData *)modelData
+                    sampleRate:(UInt32)sampleRate
+                    iterations:(int)iterations
+                  processFrames:(int)framesPerSession {
+    using namespace Krisp::AudioSdk;
+    NSMutableString *report = [NSMutableString string];
+    auto rateResult = getKrispSampleRate(sampleRate);
+    if (!rateResult.second) {
+        return [NSString stringWithFormat:@"Unsupported sample rate %u", sampleRate];
+    }
+    ModelInfo modelInfo;
+    modelInfo.blob.first = static_cast<const uint8_t *>(modelData.bytes);
+    modelInfo.blob.second = modelData.length;
+    const size_t frameSamples = (size_t)sampleRate * 10 / 1000;
+    std::vector<short> in(frameSamples, 0), out(frameSamples, 0);
+    for (size_t i = 0; i < frameSamples; i++) {
+        in[i] = (short)((i % 97) * 50 - 2400);
+    }
+    [report appendFormat:@"start: live malloc %.2f MiB, footprint %.2f MiB\n", reproLiveMallocMiB(), reproFootprintMiB()];
+    double afterFirst = 0;
+    for (int it = 1; it <= iterations; it++) {
+        NcSessionConfig cfg = {rateResult.first, FrameDuration::Fd10ms, rateResult.first, &modelInfo, false, nullptr};
+        std::shared_ptr<Nc<short>> session;
+        try {
+            session = Nc<short>::create(cfg);
+        } catch (const std::exception &ex) {
+            [report appendFormat:@"iteration %d: create failed: %s\n", it, ex.what()];
+            break;
+        }
+        for (int f = 0; f < framesPerSession && session; f++) {
+            session->process(in.data(), frameSamples, out.data(), frameSamples, 100.0f, nullptr);
+        }
+        session.reset(); // destroys the session
+        double live = reproLiveMallocMiB();
+        if (it == 1) {
+            afterFirst = live;
+        }
+        [report appendFormat:@"iteration %2d: after destroy live malloc %.2f MiB (%+.2f vs iteration 1), footprint %.2f MiB\n",
+                             it, live, live - afterFirst, reproFootprintMiB()];
+    }
+    return report;
+}
+
+@end
 
 #pragma mark - KrispWavFileProcessor
 
