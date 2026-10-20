@@ -1,18 +1,55 @@
 <resources>
     <string name="app_name">Krisp Test App</string>
-    <string name="txt_wav">Select WAV File</string>
-    <string name="txt_model">Select Krisp Model</string>
+    <string name="txt_header">Krisp Test\nApplication</string>
+    <string name="txt_page_title">File Processing</string>
+    <string name="txt_sdk_version">Krisp SDK Version: %1$s</string>
+
+    <string name="txt_wav">no WAV file loaded</string>
+    <string name="txt_model">no model loaded</string>
     <string name="btn_wav_name">Load WAV File</string>
-    <string name="btn_model_name">Load Model File</string>
-    <string name="btn_process_name">Process</string>
+    <string name="btn_model_name">Select Model</string>
+    <string name="btn_process_name">Process Audio</string>
+    <string name="btn_stop_name">Stop</string>
+    <string name="btn_save_name">Save Processed Audio</string>
+    <string name="chk_low_precision">Low precision (FP16)</string>
 
     <string name="txt_process">Select WAV file and model</string>
+    <string name="txt_process_ready">Ready to process</string>
     <string name="txt_process_in_progress">Processing is in progress</string>
     <string name="txt_process_done">Processing is complete</string>
+    <string name="txt_process_stopped">Processing was stopped</string>
+    <string name="txt_process_failed">Processing failed</string>
 
-    <string name="txt_wav_loaded_prefix">WAV </string>
-    <string name="txt_wav_loaded_postfix">is loaded.</string>
-    <string name="txt_model_loaded_prefix">Model </string>
-    <string name="txt_model_loaded_postfix"> is loaded.</string>
-    <string name="txt_model_failed_prefix">Model load failed </string>
+    <string name="txt_wav_loaded">%1$s audio is loaded</string>
+    <string name="txt_wav_loaded_info">%1$s audio is loaded\n%2$.1f MB · %3$d Hz %4$s · %5$.1f min</string>
+    <string name="txt_saving">Saving processed audio…</string>
+    <string name="msg_not_enough_memory">Not enough memory: the processed audio needs %1$.1f MB, only %2$.1f MB are available. Close other apps or use a shorter file.</string>
+    <string name="txt_model_loaded">%1$s model is loaded</string>
+    <string name="txt_model_failed">%1$s model failed to load</string>
+    <string name="txt_saved_to">Saved to %1$s</string>
+    <string name="txt_save_failed">Save failed: %1$s</string>
+    <string name="txt_save_canceled">Save canceled</string>
+
+    <string name="txt_frames">Audio frames processed: %1$d / %2$d</string>
+    <string name="txt_audio_duration">Audio processed: %1$.1f s (%2$d Hz, %3$d ms frames)</string>
+    <string name="txt_processing_time">Processing time: %1$.2f s NC · %2$.2f s total</string>
+    <string name="txt_speed">Speed: %1$.1fx realtime · %2$.3f ms per frame</string>
+    <string name="txt_precision">Low precision: %1$s · CPU FP16: %2$s</string>
+    <string name="txt_precision_none">Low precision: – · CPU FP16: %1$s</string>
+    <string name="txt_on">on</string>
+    <string name="txt_off">off</string>
+    <string name="txt_yes">yes</string>
+    <string name="txt_no">no</string>
+    <string name="txt_audio_duration_none">Audio processed: –</string>
+    <string name="txt_processing_time_none">Processing time: –</string>
+    <string name="txt_speed_none">Speed: –</string>
+
+    <string name="title_file_import_error">File Import Error</string>
+    <string name="title_processing_error">Processing Error</string>
+    <string name="title_sdk_error">Loading Error</string>
+    <string name="msg_sdk_load_failed">Failed to load Krisp Audio SDK. App will not work.</string>
+    <string name="msg_model_load_failed">Error loading Krisp model: %1$s</string>
+
+    <string name="status_ok">✔</string>
+    <string name="status_fail">✘</string>
 </resources>
