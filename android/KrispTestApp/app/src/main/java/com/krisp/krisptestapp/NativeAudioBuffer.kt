@@ -54,6 +54,10 @@ class NativeAudioBuffer private constructor(private var handle: Long) : OutputSt
         }
     }
 
+    /** The native ChunkedBuffer, for native code that appends to it directly (the audio capture). */
+    val nativeHandle: Long
+        get() = handle.also { check(it != 0L) { "NativeAudioBuffer was released" } }
+
     /** Writes everything written so far to the file descriptor (e.g. ParcelFileDescriptor.fd of the save target). */
     fun writeTo(fd: Int) {
         check(handle != 0L) { "NativeAudioBuffer was released" }

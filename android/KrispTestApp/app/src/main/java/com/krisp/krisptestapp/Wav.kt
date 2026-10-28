@@ -32,6 +32,26 @@ data class WavHeader(
 /** Reads and checks the header of a mono WAV (up to the start of its audio data). */
 fun parseWavHeader(input: InputStream): WavHeader = BufferedInputStream(input).parseWavHeaderMono()
 
+/** The 44-byte header of a mono IEEE float (32-bit) WAV whose audio is [dataBytes] long. */
+fun floatMonoWavHeader(sampleRate: Int, dataBytes: Long): ByteArray {
+    val data = dataBytes.coerceAtMost(0xFFFFFFFFL - 36) // a RIFF size is 32 bits
+    return ByteBuffer.allocate(44).order(ByteOrder.LITTLE_ENDIAN).apply {
+        put("RIFF".toByteArray(Charsets.US_ASCII))
+        putInt((36 + data).toInt())
+        put("WAVE".toByteArray(Charsets.US_ASCII))
+        put("fmt ".toByteArray(Charsets.US_ASCII))
+        putInt(16)                // fmt chunk size
+        putShort(3)               // IEEE float
+        putShort(1)               // mono
+        putInt(sampleRate)
+        putInt(sampleRate * 4)    // byte rate
+        putShort(4)               // block align
+        putShort(32)              // bits per sample
+        put("data".toByteArray(Charsets.US_ASCII))
+        putInt(data.toInt())
+    }.array()
+}
+
 private fun InputStream.readNBytesOrThrow(n: Int): ByteArray {
     val buf = ByteArray(n)
     var off = 0
@@ -140,8 +160,9 @@ class WavStreamProcessor(
     private val openInput: () -> InputStream,
     private val onPcm16StartSession: ((samplingRate: Int) -> Boolean)? = null,
     private val onPcmFloatStartSession: ((samplingRate: Int) -> Boolean)? = null,
-    private val onPcm16Frame: ((buffer: ByteArray, valid: Int) -> Boolean)? = null,
-    private val onFloat32Frame: ((buffer: ByteArray, valid: Int) -> Boolean)? = null,
+    /** NC on one frame in place; returns the NC call's time in ns (measured natively), negative on failure. */
+    private val onPcm16Frame: ((buffer: ByteArray, valid: Int) -> Long)? = null,
+    private val onFloat32Frame: ((buffer: ByteArray, valid: Int) -> Long)? = null,
     /** Called once the header is parsed, before processing starts. */
     private val onHeader: ((header: WavHeader, stats: WavProcessingStats) -> Unit)? = null,
     /** Called during processing (at most every [progressIntervalMs]) and once at the end. */
@@ -185,11 +206,11 @@ class WavStreamProcessor(
                         "(is the model loaded, and does it support this sample rate?)"
                 }
 
-                val frameHandler: (ByteArray, Int) -> Boolean =
+                val frameHandler: (ByteArray, Int) -> Long =
                     if (hdr.audioFormat == 1 && hdr.bitsPerSample == 16) {
-                        { buf, valid -> onPcm16Frame?.invoke(buf, valid) ?: true }
+                        { buf, valid -> onPcm16Frame?.invoke(buf, valid) ?: 0L }
                     } else {
-                        { buf, valid -> onFloat32Frame?.invoke(buf, valid) ?: true }
+                        { buf, valid -> onFloat32Frame?.invoke(buf, valid) ?: 0L }
                     }
 
                 val frameBytes = ((hdr.sampleRate * frameMs) / 1000) * bytesPerSample
@@ -234,10 +255,10 @@ class WavStreamProcessor(
                         tmp
                     } else buffer
 
-                    val frameStartNanos = System.nanoTime()
-                    val frameOk = frameHandler(fullFrameForProcessing, frameBytes)
-                    ncNanos += System.nanoTime() - frameStartNanos
-                    check(frameOk) { "Krisp NC failed on frame ${processedFrames + 1} of $totalFrames" }
+                    // The SDK's process() only, timed in native code: no JNI or copies in the number.
+                    val frameNanos = frameHandler(fullFrameForProcessing, frameBytes)
+                    check(frameNanos >= 0) { "Krisp NC failed on frame ${processedFrames + 1} of $totalFrames" }
+                    ncNanos += frameNanos
                     processedFrames++
 
                     // Write only the originally read bytes; header remains unchanged

@@ -9,4 +9,5 @@
     <color name="white">#FFFFFFFF</color>
     <color name="status_ok">#FF2E7D32</color>
     <color name="status_fail">#FFC62828</color>
+    <color name="capture_green">#FF2E7D32</color>
 </resources>

@@ -1,20 +1,9 @@
 package com.krisp.krisptestapp
 
-import android.app.ActivityManager
-import android.content.pm.ApplicationInfo
 import android.net.Uri
 import android.content.Intent
-import android.content.res.Configuration
-import android.os.Build
-import android.provider.OpenableColumns
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
-import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import androidx.core.content.ContextCompat
 import com.krisp.krisptestapp.databinding.ActivityMainBinding
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.CancellationException
@@ -22,23 +11,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
-import androidx.documentfile.provider.DocumentFile
-import androidx.appcompat.app.AlertDialog
 import android.util.Log
 import java.io.IOException
 import java.util.concurrent.atomic.AtomicBoolean
 
-class WavProcessActivity : AppCompatActivity() {
-
-    external fun krispInit(logLevel: Int): Boolean
-    external fun krispLoadModel(modelBytes: ByteArray, size: Int): Int
-    external fun krispStartNcSessionPcmFloat(samplingRate: Int, lowPrecision: Boolean) : Boolean
-    external fun krispNcFramePcmFloat(buf: ByteArray, valid: Int) : Boolean
-    external fun krispStartNcSessionPcm16(samplingRate: Int, lowPrecision: Boolean) : Boolean
-    external fun krispNcFramePcm16(buf: ByteArray, valid: Int) : Boolean
-    external fun krispGetVersion(): String
-    external fun krispTakeLastError(): String
-    external fun krispCpuHasFp16(): Boolean
+/** File Processing page: runs NC over a WAV file and reports benchmark stats, like the iOS app's FileProcessingView. */
+class WavProcessActivity : KrispPageActivity() {
 
     private class ProcessedAudio(val buffer: NativeAudioBuffer, val stats: WavProcessingStats)
 
@@ -46,8 +24,6 @@ class WavProcessActivity : AppCompatActivity() {
     private var selectedWavUri: Uri? = null
     private var selectedWavName: String? = null
     private var selectedWavSize: Long = -1 // bytes, -1 when the provider doesn't tell
-    private var selectedModelUri: Uri? = null
-    private var modelLoaded = false
     private var processJob: Job? = null
     // The processed WAV, in native memory (a long recording doesn't fit in the Java heap).
     private var processedAudio: NativeAudioBuffer? = null
@@ -62,77 +38,9 @@ class WavProcessActivity : AppCompatActivity() {
     private var isSaving = false
     // The low-precision setting the shown result was processed with, null when there is no result.
     private var lastRunLowPrecision: Boolean? = null
-    private val cpuHasFp16 by lazy { krispCpuHasFp16() }
 
     companion object {
-        //private const val PERMISSION_REQUEST_READ_EXTERNAL = 100
-        // Used to load the 'krisptestapp' library on application startup.
-        init {
-            System.loadLibrary("krisptestapp")
-        }
         private const val TAG = "WavProcess"
-
-        // Krisp::AudioSdk::LogLevel values, for krispInit.
-        private const val SDK_LOG_INFO = 2
-        private const val SDK_LOG_WARN = 3
-
-        private fun megabytes(bytes: Long) = bytes / (1024.0 * 1024.0)
-    }
-
-    /** The file name the user sees (e.g. "speech.wav"), not the content:// URI. */
-    private fun displayName(uri: Uri): String {
-        val name = try {
-            contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
-                if (c.moveToFirst()) c.getString(0) else null
-            }
-        } catch (_: Throwable) {
-            null
-        }
-        return name ?: uri.lastPathSegment?.substringAfterLast('/')?.substringAfterLast(':') ?: uri.toString()
-    }
-
-    /** The file's size in bytes, or -1 if the provider doesn't tell. */
-    private fun fileSize(uri: Uri): Long {
-        val size = try {
-            contentResolver.query(uri, arrayOf(OpenableColumns.SIZE), null, null, null)?.use { c ->
-                if (c.moveToFirst() && !c.isNull(0)) c.getLong(0) else null
-            }
-        } catch (_: Throwable) {
-            null
-        }
-        if (size != null && size > 0) return size
-        return try {
-            contentResolver.openFileDescriptor(uri, "r")?.use { it.statSize } ?: -1
-        } catch (_: Throwable) {
-            -1
-        }
-    }
-
-    /** Null if [bytes] fit in the memory the system can give the app, else why they don't. */
-    private fun memoryShortageFor(bytes: Long): String? {
-        val activityManager = getSystemService(ACTIVITY_SERVICE) as ActivityManager
-        val memory = ActivityManager.MemoryInfo().also { activityManager.getMemoryInfo(it) }
-        // Below the threshold the system starts killing apps, this one included.
-        val usable = (memory.availMem - memory.threshold).coerceAtLeast(0)
-        return if (bytes > usable) {
-            getString(R.string.msg_not_enough_memory, megabytes(bytes), megabytes(usable))
-        } else {
-            null
-        }
-    }
-
-    /** [message], plus the last error the SDK reported (also in logcat, tags KrispSDK / KrispTestApp), if any. */
-    private fun withSdkError(message: String): String {
-        val sdkError = krispTakeLastError()
-        return if (sdkError.isEmpty() || message.contains(sdkError)) message else "$message\n\nSDK: $sdkError"
-    }
-
-    private fun showError(title: String, message: String) {
-        AlertDialog.Builder(this)
-            .setTitle(title)
-            .setMessage(message)
-            .setPositiveButton(android.R.string.ok, null)
-            .show()
     }
 
     /** Drops the processed audio and its stats, e.g. when a different WAV or model is loaded. */
@@ -144,46 +52,12 @@ class WavProcessActivity : AppCompatActivity() {
         showStats(null)
     }
 
-    private fun handleModelUri(uri: Uri) {
-        val name = displayName(uri)
-        try {
-            contentResolver.openInputStream(uri)?.use { input ->
-                val bytes = input.readBytes()
-                if (bytes.isEmpty()) {
-                    showError(getString(R.string.title_file_import_error), "File is empty")
-                    return
-                }
-                krispTakeLastError() // drop older errors: only this load's should show up below
-                val rc = krispLoadModel(bytes, bytes.size)
-                // A failed load leaves no usable model in the native layer, so the previous one is gone too.
-                modelLoaded = rc == 0
-                if (modelLoaded) {
-                    // Results of the previous model are stale; after a failed load they stay valid (and savable).
-                    clearProcessed()
-                    selectedModelUri = uri
-                    binding.textModelFile.text = getString(R.string.txt_model_loaded, name)
-                } else {
-                    selectedModelUri = null
-                    binding.textModelFile.text = getString(R.string.txt_model_failed, name)
-                    showError(
-                        getString(R.string.title_file_import_error),
-                        withSdkError(getString(R.string.msg_model_load_failed, name))
-                    )
-                }
-            } ?: run {
-                binding.textModelFile.text = "Failed to open model: null stream"
-                Log.e(TAG, "openInputStream returned null for $uri")
-                showError(getString(R.string.title_file_import_error), "Unable to access the selected file.")
-            }
-        } catch (t: Throwable) {
-            // Reading the file failed before it reached the SDK: the loaded model (if any) is still in use.
-            val msg = "Model open failed: ${t.javaClass.simpleName}: ${t.message}"
-            Log.e(TAG, "handleModelUri failed for $uri", t)
-            showError(getString(R.string.title_file_import_error), msg)
-        } finally {
-            showIdleStatus()
-            refreshUi()
-        }
+    override fun onModelPicked(loaded: Boolean) {
+        // Results of the previous model are stale; after a failed load they stay valid (and savable).
+        if (loaded) clearProcessed()
+        binding.textModelFile.text = modelText()
+        showIdleStatus()
+        refreshUi()
     }
 
     private fun handleWavUri(uri: Uri) {
@@ -221,89 +95,6 @@ class WavProcessActivity : AppCompatActivity() {
         )
         showIdleStatus()
         refreshUi()
-    }
-
-    private val pickModelGet = registerForActivityResult(
-        ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        uri?.let { handleModelUri(it) } // No persistable permission with GetContent
-    }
-
-    private val pickModelDoc = registerForActivityResult(
-        ActivityResultContracts.OpenDocument()
-    ) { uri: Uri? ->
-        if (uri == null) {
-            return@registerForActivityResult
-        }
-        try {
-            // Persist only if supported (OpenDocument supports; GetContent does not)
-            contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        } catch (_: Throwable) { /* ignore */ }
-        handleModelUri(uri)
-    }
-
-    private val pickModelActivity = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { res ->
-        val uri = res.data?.data ?: return@registerForActivityResult
-        try {
-            contentResolver.takePersistableUriPermission(
-                uri,
-                Intent.FLAG_GRANT_READ_URI_PERMISSION
-            )
-        } catch (_: Throwable) { /* may be unnecessary on some providers */ }
-        handleModelUri(uri)
-    }
-
-    private val pickFolder = registerForActivityResult(
-        ActivityResultContracts.OpenDocumentTree()
-    ) { treeUri: Uri? ->
-        treeUri ?: return@registerForActivityResult
-        try {
-            contentResolver.takePersistableUriPermission(
-                treeUri,
-                Intent.FLAG_GRANT_READ_URI_PERMISSION
-            )
-        } catch (_: Throwable) {}
-        val dir = DocumentFile.fromTreeUri(this, treeUri) ?: return@registerForActivityResult
-        showKefChooser(dir)
-    }
-
-    private fun showKefChooser(dir: DocumentFile) {
-        val files = dir.listFiles().filter { it.isFile && (it.name?.endsWith(".kef", true) == true) }
-        if (files.isEmpty()) {
-            AlertDialog.Builder(this)
-                .setTitle("No .kef files found")
-                .setMessage("Pick a different folder or copy your model into this folder.")
-                .setPositiveButton(android.R.string.ok, null)
-                .show()
-            return
-        }
-        val names = files.map { it.name ?: "(unnamed)" }.toTypedArray()
-        AlertDialog.Builder(this)
-            .setTitle("Select model")
-            .setItems(names) { _, which ->
-                val file = files[which]
-                handleModelUri(file.uri)
-            }
-            .show()
-    }
-
-    private fun openFolderPicker() {
-        // Launch tree picker; user can pick "Downloads" manually if not pre-seeded
-        pickFolder.launch(null)
-    }
-
-    private fun openModelPicker() {
-        // Clean, contract-based OpenDocument flow (persistable)
-        pickModelDoc.launch(arrayOf("application/*", "application/octet-stream", "*/*"))
-    }
-
-    private val pickModel = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
-        uri?.let {
-            contentResolver.takePersistableUriPermission(it, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            handleModelUri(it)
-        }
     }
 
     private val pickWav = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
@@ -357,26 +148,17 @@ class WavProcessActivity : AppCompatActivity() {
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        applySystemBarInsets()
+        applySystemBarInsets(binding.root)
 
-        // globalInit with a logcat log callback. Debug builds also show the SDK's Info messages (e.g. that a model
-        // runs in fp16); release builds only warnings and errors. Like the iOS app, a failed init is reported.
-        val debuggable = (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
-        if (krispInit(if (debuggable) SDK_LOG_INFO else SDK_LOG_WARN)) {
-            Log.i(TAG, "Krisp Audio SDK ${krispGetVersion()} initialized, SDK log level " +
-                "${if (debuggable) "Info" else "Warn"} (tag KrispSDK), CPU FP16 arithmetic: $cpuHasFp16")
-        } else {
-            showError(getString(R.string.title_sdk_error), withSdkError(getString(R.string.msg_sdk_load_failed)))
-        }
-        binding.textSdkVersion.text = getString(R.string.txt_sdk_version, krispGetVersion())
+        binding.textSdkVersion.text = getString(R.string.txt_sdk_version, KrispSdk.version)
 
         binding.buttonModelFile.setOnClickListener {
-            // Force real Files (DocumentsUI) with persistable URI; fallback to GetContent if needed
+            // Force real Files (DocumentsUI) with persistable URI
             openModelPicker()
         }
         binding.buttonModelFile.setOnLongClickListener {
             // Manual fallback: let user pick a folder and choose a .kef inside it
-            openFolderPicker()
+            openModelFolderPicker()
             true
         }
         binding.buttonWavFile.setOnClickListener {
@@ -396,28 +178,14 @@ class WavProcessActivity : AppCompatActivity() {
         }
 
         showStats(null)
-        refreshUi()
     }
 
-    /**
-     * Android 15+ lays apps targeting SDK 35 out edge-to-edge: the page starts under the status bar and ends under the
-     * navigation bar. Pad it by their sizes so the header and the bottom row stay visible, and pick system bar icon
-     * colors that show on the page background (the bars are transparent there).
-     */
-    private fun applySystemBarInsets() {
-        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
-            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout())
-            view.setPadding(bars.left, bars.top, bars.right, bars.bottom)
-            insets
-        }
-        if (Build.VERSION.SDK_INT >= 35) {
-            val night = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
-                Configuration.UI_MODE_NIGHT_YES
-            WindowCompat.getInsetsController(window, window.decorView).apply {
-                isAppearanceLightStatusBars = !night
-                isAppearanceLightNavigationBars = !night
-            }
-        }
+    override fun onResume() {
+        super.onResume()
+        // The model is shared: another page may have loaded a different one meanwhile.
+        binding.textModelFile.text = modelText()
+        showIdleStatus()
+        refreshUi()
     }
 
     private fun suggestedOutputName(): String {
@@ -427,7 +195,7 @@ class WavProcessActivity : AppCompatActivity() {
 
     private fun startProcessing() {
         val wavUri = selectedWavUri ?: return
-        if (!modelLoaded) return
+        if (!KrispSdk.modelLoaded) return
 
         // Free the previous output first: its memory counts towards what's available for the next one.
         clearProcessed()
@@ -443,7 +211,7 @@ class WavProcessActivity : AppCompatActivity() {
         lastRunLowPrecision = lowPrecision // shown with the stats while this run goes on
         stopRequested.set(false)
         isProcessing = true
-        krispTakeLastError() // drop older errors: only this run's should show up in its error dialog
+        KrispSdk.takeLastError() // drop older errors: only this run's should show up in its error dialog
         binding.textProcessStatus.text = getString(R.string.txt_process_in_progress)
 
         processJob = lifecycleScope.launch {
@@ -458,7 +226,7 @@ class WavProcessActivity : AppCompatActivity() {
                 showStats(result.stats)
                 binding.textProcessStatus.text = getString(R.string.txt_process_done)
                 Log.i(TAG, "Processed ${result.stats.processedFrames} frames, lowPrecision=$lowPrecision, " +
-                    "cpuFp16=$cpuHasFp16: ${result.stats}")
+                    "cpuFp16=${KrispSdk.cpuHasFp16}: ${result.stats}")
             } catch (stopped: WavProcessingStoppedException) {
                 // Like the iOS app: a stopped run leaves no processed audio to save.
                 lastRunLowPrecision = lowPrecision
@@ -474,7 +242,7 @@ class WavProcessActivity : AppCompatActivity() {
                 showStats(null)
                 binding.textProcessStatus.text = getString(R.string.txt_process_failed)
                 Log.e(TAG, "Processing failed for $wavUri", t)
-                showError(getString(R.string.title_processing_error), withSdkError(t.message ?: t.javaClass.simpleName))
+                showError(getString(R.string.title_processing_error), KrispSdk.withSdkError(t.message ?: t.javaClass.simpleName))
             } finally {
                 isProcessing = false
                 if (!isDestroyed) refreshUi()
@@ -485,9 +253,9 @@ class WavProcessActivity : AppCompatActivity() {
 
     /** The status line while idle with nothing processed: what is still missing, or that it's ready. */
     private fun showIdleStatus() {
-        if (isProcessing || processedAudio != null) return
+        if (isProcessing || isSaving || processedAudio != null) return
         binding.textProcessStatus.text = getString(
-            if (modelLoaded && selectedWavUri != null) R.string.txt_process_ready else R.string.txt_process
+            if (KrispSdk.modelLoaded && selectedWavUri != null) R.string.txt_process_ready else R.string.txt_process
         )
     }
 
@@ -501,25 +269,20 @@ class WavProcessActivity : AppCompatActivity() {
         binding.buttonProcess.isEnabled = when {
             isProcessing -> !stopRequested.get()
             isSaving -> false
-            else -> modelLoaded && selectedWavUri != null
+            else -> KrispSdk.modelLoaded && selectedWavUri != null
         }
         binding.buttonSave.isEnabled = !busy && processedAudio != null
 
         setStatusMark(binding.statusWav, selectedWavUri != null)
-        setStatusMark(binding.statusModel, modelLoaded)
+        setStatusMark(binding.statusModel, KrispSdk.modelLoaded)
         setStatusMark(binding.statusProcess, processedAudio != null)
         setStatusMark(binding.statusSave, processedSaved)
-    }
-
-    private fun setStatusMark(view: TextView, ok: Boolean) {
-        view.text = getString(if (ok) R.string.status_ok else R.string.status_fail)
-        view.setTextColor(ContextCompat.getColor(this, if (ok) R.color.status_ok else R.color.status_fail))
     }
 
     /** Shows frame progress, processing time and speed; null (nothing processed) shows placeholders. */
     private fun showStats(stats: WavProcessingStats?) {
         // Which setting the shown numbers were measured with: the checkbox may have changed since.
-        val cpuFp16 = getString(if (cpuHasFp16) R.string.txt_yes else R.string.txt_no)
+        val cpuFp16 = getString(if (KrispSdk.cpuHasFp16) R.string.txt_yes else R.string.txt_no)
         binding.textPrecision.text = when (lastRunLowPrecision) {
             null -> getString(R.string.txt_precision_none, cpuFp16)
             true -> getString(R.string.txt_precision, getString(R.string.txt_on), cpuFp16)
@@ -547,10 +310,10 @@ class WavProcessActivity : AppCompatActivity() {
     private fun processWavFile(uri: Uri, inputSize: Long, lowPrecision: Boolean): ProcessedAudio {
         val processor = WavStreamProcessor(
             openInput = { contentResolver.openInputStream(uri) ?: throw IllegalStateException("Unable to open $uri") },
-            onPcmFloatStartSession = { sampleRate -> krispStartNcSessionPcmFloat(sampleRate, lowPrecision) },
-            onPcm16StartSession = { sampleRate -> krispStartNcSessionPcm16(sampleRate, lowPrecision) },
-            onPcm16Frame = ::krispNcFramePcm16,
-            onFloat32Frame = ::krispNcFramePcmFloat,
+            onPcmFloatStartSession = { sampleRate -> KrispSdk.startFileSessionPcmFloat(sampleRate, lowPrecision) },
+            onPcm16StartSession = { sampleRate -> KrispSdk.startFileSessionPcm16(sampleRate, lowPrecision) },
+            onPcm16Frame = KrispSdk::processFileFramePcm16,
+            onFloat32Frame = KrispSdk::processFileFramePcmFloat,
             onHeader = { _, stats -> runOnUiThread { if (!isDestroyed) showStats(stats) } },
             onProgress = { stats -> runOnUiThread { if (!isDestroyed) showStats(stats) } },
             isStopped = { stopRequested.get() }
