@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The ✔/✘ mark next to an action button, like the iOS app's checkmark/xmark icons. -->
+    <style name="StatusMark">
+        <item name="android:layout_width">40dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginStart">12dp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textSize">26sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/status_fail</item>
+    </style>
+
+    <!-- One line of file/processing info below the buttons. -->
+    <style name="InfoLine">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">4dp</item>
+        <item name="android:gravity">center_horizontal</item>
+        <item name="android:textSize">15sp</item>
+    </style>
+
+    <!-- Capture page fields: "Duration [ 30 ] minutes", like the iOS text fields. -->
+    <style name="FieldLabel">
+        <item name="android:layout_width">90dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:gravity">end</item>
+        <item name="android:textSize">16sp</item>
+    </style>
+
+    <style name="NumberField">
+        <item name="android:layout_width">80dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginStart">12dp</item>
+        <item name="android:layout_marginEnd">12dp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="FieldUnit">
+        <item name="android:layout_width">90dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">16sp</item>
+    </style>
+</resources>

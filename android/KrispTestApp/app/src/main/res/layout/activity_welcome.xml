@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Start page, like the iOS app's WelcomeView: header, SDK version, testing mode buttons. -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    tools:context=".WelcomeActivity">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="72dp"
+                android:layout_height="72dp"
+                android:layout_marginEnd="16dp"
+                android:contentDescription="@string/app_name"
+                android:src="@drawable/krisp_icon" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/txt_header"
+                android:textSize="28sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/text_sdk_version"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            tools:text="Krisp SDK Version: 9.21.0.1241" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:text="@string/txt_select_mode"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/button_file_processing"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:paddingTop="14dp"
+            android:paddingBottom="14dp"
+            android:text="@string/btn_file_processing"
+            android:textAllCaps="false"
+            android:textSize="17sp" />
+
+        <Button
+            android:id="@+id/button_audio_capture"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:backgroundTint="@color/capture_green"
+            android:paddingTop="14dp"
+            android:paddingBottom="14dp"
+            android:text="@string/btn_audio_capture"
+            android:textAllCaps="false"
+            android:textSize="17sp" />
+    </LinearLayout>
+</ScrollView>

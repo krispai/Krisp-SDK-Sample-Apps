@@ -1,18 +1,105 @@
 <resources>
     <string name="app_name">Krisp Test App</string>
-    <string name="txt_wav">Select WAV File</string>
-    <string name="txt_model">Select Krisp Model</string>
+    <string name="txt_header">Krisp Test\nApplication</string>
+    <string name="txt_page_title">File Processing</string>
+    <string name="txt_sdk_version">Krisp SDK Version: %1$s</string>
+
+    <string name="txt_wav">no WAV file loaded</string>
+    <string name="txt_model">no model loaded</string>
     <string name="btn_wav_name">Load WAV File</string>
-    <string name="btn_model_name">Load Model File</string>
-    <string name="btn_process_name">Process</string>
+    <string name="btn_model_name">Select Model</string>
+    <string name="btn_process_name">Process Audio</string>
+    <string name="btn_stop_name">Stop</string>
+    <string name="btn_save_name">Save Processed Audio</string>
+    <string name="chk_low_precision">Low precision (FP16)</string>
 
     <string name="txt_process">Select WAV file and model</string>
+    <string name="txt_process_ready">Ready to process</string>
     <string name="txt_process_in_progress">Processing is in progress</string>
     <string name="txt_process_done">Processing is complete</string>
+    <string name="txt_process_stopped">Processing was stopped</string>
+    <string name="txt_process_failed">Processing failed</string>
 
-    <string name="txt_wav_loaded_prefix">WAV </string>
-    <string name="txt_wav_loaded_postfix">is loaded.</string>
-    <string name="txt_model_loaded_prefix">Model </string>
-    <string name="txt_model_loaded_postfix"> is loaded.</string>
-    <string name="txt_model_failed_prefix">Model load failed </string>
+    <string name="txt_wav_loaded_info">%1$s audio is loaded\n%2$.1f MB · %3$d Hz %4$s · %5$.1f min</string>
+    <string name="txt_saving">Saving processed audio…</string>
+    <string name="msg_not_enough_memory">Not enough memory: the processed audio needs %1$.1f MB, only %2$.1f MB are available. %3$s</string>
+    <string name="msg_memory_advice_file">Close other apps or use a shorter file.</string>
+    <string name="txt_model_loaded">%1$s model is loaded</string>
+    <string name="txt_saved_to">Saved to %1$s</string>
+    <string name="txt_save_failed">Save failed: %1$s</string>
+    <string name="txt_save_canceled">Save canceled</string>
+
+    <string name="txt_frames">Audio frames processed: %1$d / %2$d</string>
+    <string name="txt_audio_duration">Audio processed: %1$.1f s (%2$d Hz, %3$d ms frames)</string>
+    <string name="txt_processing_time">Processing time: %1$.2f s NC · %2$.2f s total</string>
+    <string name="txt_speed">Speed: %1$.1fx realtime · %2$.3f ms per frame</string>
+    <string name="txt_precision">Low precision: %1$s · CPU FP16: %2$s</string>
+    <string name="txt_precision_none">Low precision: – · CPU FP16: %1$s</string>
+    <string name="txt_on">on</string>
+    <string name="txt_off">off</string>
+    <string name="txt_yes">yes</string>
+    <string name="txt_no">no</string>
+    <string name="txt_audio_duration_none">Audio processed: –</string>
+    <string name="txt_processing_time_none">Processing time: –</string>
+    <string name="txt_speed_none">Speed: –</string>
+
+    <string name="title_file_import_error">File Import Error</string>
+    <string name="title_processing_error">Processing Error</string>
+    <string name="title_sdk_error">Loading Error</string>
+    <string name="msg_sdk_load_failed">Failed to load Krisp Audio SDK. App will not work.</string>
+    <string name="msg_model_load_failed">Error loading Krisp model: %1$s</string>
+
+    <string name="status_ok">✔</string>
+    <string name="status_fail">✘</string>
+    <string name="status_recording">●</string>
+
+    <!-- Start page -->
+    <string name="txt_select_mode">Select Testing Mode</string>
+    <string name="btn_file_processing">File Processing</string>
+    <string name="btn_audio_capture">Audio Capture</string>
+
+    <!-- Audio Capture page -->
+    <string name="txt_capture_title">Audio Capture</string>
+    <string name="btn_start_capture">Start Capture</string>
+    <string name="btn_stop_capture">Stop Capture</string>
+    <string name="txt_mode_realtime">Realtime</string>
+    <string name="txt_mode_distributed">Distributed</string>
+    <string name="txt_duration">Duration</string>
+    <string name="txt_block_size">Block Size</string>
+    <string name="txt_minutes">minutes</string>
+    <string name="default_duration_minutes" translatable="false">30</string>
+    <string name="default_block_minutes" translatable="false">1</string>
+
+    <string name="txt_capture_select_model">Select a model to capture</string>
+    <string name="txt_capture_ready">Ready to capture</string>
+    <string name="txt_capture_preparing">Allocating buffers…</string>
+    <string name="txt_capture_running">Capturing (%1$s, %2$d Hz)…</string>
+    <string name="txt_capture_stopping">Stopping…</string>
+    <string name="txt_capture_done">Capture complete: duration reached</string>
+    <string name="txt_capture_stopped">Capture was stopped</string>
+    <string name="txt_capture_left_app">Capture was stopped: the app left the foreground (Android mutes the microphone then)</string>
+    <string name="txt_capture_failed">Capture failed</string>
+
+    <string name="txt_minutes_processed">Processing Duration: %1$d minutes</string>
+    <string name="txt_capture_audio">Audio processed: %1$s of %2$s captured (%3$d Hz, %4$d ms frames)</string>
+    <string name="txt_capture_audio_none">Audio processed: –</string>
+    <string name="txt_capture_cpu">NC time: %1$.2f s · CPU load: %2$.1f%% of realtime</string>
+    <string name="txt_capture_cpu_none">NC time: –</string>
+    <string name="txt_capture_frames">Per frame: avg %1$.3f ms · max %2$.3f ms</string>
+    <string name="txt_capture_frames_none">Per frame: –</string>
+    <string name="txt_capture_interval">Last 10 s: avg %1$.3f ms · max %2$.3f ms · cpu%3$d @ %4$s</string>
+    <string name="txt_capture_interval_none">Last 10 s: –</string>
+    <string name="txt_mhz">%1$d MHz</string>
+    <string name="txt_mhz_unknown">\? MHz</string>
+    <string name="txt_capture_blocks">Blocks processed: %1$d</string>
+
+    <string name="title_capture_error">Audio Capture Error</string>
+    <string name="msg_invalid_duration">Duration must be a whole number of minutes, at least 1.</string>
+    <string name="msg_invalid_block_size">Block size must be a number of minutes above 0 and not longer than the duration.</string>
+    <string name="msg_no_mic_permission">Audio capture needs the microphone permission.</string>
+    <string name="msg_no_mic_permission_settings">Audio capture needs the microphone permission. It was denied: allow it in App Settings → Permissions → Microphone.</string>
+    <string name="btn_app_settings">App Settings</string>
+    <string name="msg_memory_advice_capture">Close other apps or capture fewer minutes (in Distributed mode, a smaller block size helps too).</string>
+    <string name="msg_no_sample_rate">The microphone supports none of the sample rates the SDK takes (48, 44.1, 32, 16 kHz).</string>
+    <string name="msg_capture_session_failed">Creating the NC session for %1$d Hz failed.</string>
 </resources>

@@ -5,8 +5,11 @@
 
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO"/>
+    <!-- Audio Capture page -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
 
     <application
+        android:name=".KrispTestApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -15,14 +18,25 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.KrispTestApp" >
+        <!-- Start page: choose File Processing or Audio Capture, like the iOS app's WelcomeView. -->
         <activity
-            android:name=".WavProcessActivity"
+            android:name=".WelcomeActivity"
             android:exported="true" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <!-- configChanges: rotating must not recreate the activity, which would drop a running processing and its result -->
+        <activity
+            android:name=".WavProcessActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
+            android:exported="false" />
+        <!-- configChanges: rotating must not recreate the activity, which would stop a running capture -->
+        <activity
+            android:name=".AudioCaptureActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
+            android:exported="false" />
     </application>
 
 </manifest>
