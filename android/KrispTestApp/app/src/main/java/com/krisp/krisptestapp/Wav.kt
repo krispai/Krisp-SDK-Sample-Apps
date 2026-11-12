@@ -99,6 +99,9 @@ private fun InputStream.skipChunkBytes(n: Long, chunk: String) {
     }
 }
 
+/** The sample rates of Krisp::AudioSdk::SamplingRate, the ones krisp.cpp maps. */
+private val SDK_SAMPLE_RATES = setOf(8000, 16000, 24000, 32000, 44100, 48000, 88200, 96000)
+
 private fun InputStream.parseWavHeaderMono(): WavHeader {
     fun ascii(b: ByteArray, from: Int) = String(b, from, 4, Charsets.US_ASCII)
 
@@ -136,6 +139,11 @@ private fun InputStream.parseWavHeaderMono(): WavHeader {
             numChannels = bb.short.toInt() and 0xFFFF
             require(numChannels == 1) { "Only mono WAV is supported" }
             sampleRate = bb.int
+            // Only the SDK's rates: anything else is a corrupt header (or one the SDK can't take), caught at import.
+            require(sampleRate in SDK_SAMPLE_RATES) {
+                "Unsupported sample rate: ${sampleRate.toLong() and 0xFFFFFFFFL} Hz " +
+                    "(the SDK takes 8, 16, 24, 32, 44.1, 48, 88.2 and 96 kHz)"
+            }
             byteRate = bb.int
             blockAlign = bb.short.toInt() and 0xFFFF
             bitsPerSample = bb.short.toInt() and 0xFFFF
