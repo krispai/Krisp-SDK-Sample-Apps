@@ -163,7 +163,18 @@ class AudioCapturer(
         }
 
         startNanos = System.nanoTime()
-        record.startRecording()
+        try {
+            record.startRecording()
+            // startRecording() can also return without recording, e.g. when another app holds the microphone.
+            check(record.recordingState == AudioRecord.RECORDSTATE_RECORDING) {
+                "The microphone couldn't start recording ($sampleRate Hz). Is another app using it?"
+            }
+        } catch (t: Throwable) {
+            // The capture thread, which releases the recorder, won't start: release it here (it stops it too), or it
+            // keeps the native recorder and the input route until it is garbage collected.
+            record.release()
+            throw t
+        }
         if (mode == CaptureMode.DISTRIBUTED) {
             Thread({ runWorker() }, "KrispCaptureNc").start()
         }
