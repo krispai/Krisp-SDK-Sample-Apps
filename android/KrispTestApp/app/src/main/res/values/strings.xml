@@ -17,6 +17,7 @@
     <string name="txt_process_ready">Ready to process</string>
     <string name="txt_process_in_progress">Processing is in progress</string>
     <string name="txt_process_done">Processing is complete</string>
+    <string name="txt_process_done_missing">Processing is complete, but the file ends %1$.1f s before the audio its header declares: the audio it has was processed</string>
     <string name="txt_process_stopped">Processing was stopped</string>
     <string name="txt_process_failed">Processing failed</string>
 

@@ -27,15 +27,17 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <!-- configChanges: rotating must not recreate the activity, which would drop a running processing and its result -->
+        <!-- configChanges: no configuration change (rotation, dark mode, font or display size, language, keyboard...) may
+             recreate the activity: that would drop a running processing and its result. A dark mode switch then
+             recolors the page only when it's opened again. -->
         <activity
             android:name=".WavProcessActivity"
-            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|navigation|touchscreen|uiMode|density|fontScale|fontWeightAdjustment|locale|layoutDirection|colorMode"
             android:exported="false" />
-        <!-- configChanges: rotating must not recreate the activity, which would stop a running capture -->
+        <!-- configChanges: as above; recreating the activity would stop a running capture -->
         <activity
             android:name=".AudioCaptureActivity"
-            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|navigation|touchscreen|uiMode|density|fontScale|fontWeightAdjustment|locale|layoutDirection|colorMode"
             android:exported="false" />
     </application>
 

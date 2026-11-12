@@ -12,21 +12,25 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
 import android.util.Log
+import java.io.FileOutputStream
 import java.io.IOException
 import java.util.concurrent.atomic.AtomicBoolean
 
 /** File Processing page: runs NC over a WAV file and reports benchmark stats, like the iOS app's FileProcessingView. */
 class WavProcessActivity : KrispPageActivity() {
 
-    private class ProcessedAudio(val buffer: NativeAudioBuffer, val stats: WavProcessingStats)
+    private class ProcessedAudio(val buffer: NativeAudioBuffer, val header: WavHeader, val stats: WavProcessingStats)
 
     private lateinit var binding: ActivityMainBinding
     private var selectedWavUri: Uri? = null
     private var selectedWavName: String? = null
     private var selectedWavSize: Long = -1 // bytes, -1 when the provider doesn't tell
+    private var selectedWavHeader: WavHeader? = null
     private var processJob: Job? = null
     // The processed WAV, in native memory (a long recording doesn't fit in the Java heap).
     private var processedAudio: NativeAudioBuffer? = null
+    // The processed audio's format (its input's), for the header of the saved WAV.
+    private var processedFormat: WavHeader? = null
     // The output of the run in progress, until it's handed over to processedAudio (freed if the run fails).
     @Volatile private var inFlightOutput: NativeAudioBuffer? = null
     private var processedSaved = false
@@ -47,6 +51,7 @@ class WavProcessActivity : KrispPageActivity() {
     private fun clearProcessed() {
         processedAudio?.release()
         processedAudio = null
+        processedFormat = null
         processedSaved = false
         lastRunLowPrecision = null
         showStats(null)
@@ -74,7 +79,12 @@ class WavProcessActivity : KrispPageActivity() {
                         "mono PCM16 or FLOAT32 is needed"
                 )
             }
-            if (header.dataSize == 0L) throw IOException("The WAV file has no audio data")
+            // The output is allocated before processing: its size must be known, from the file or its header.
+            val audioBytes = header.audioBytes(size) ?: throw IOException(
+                "The WAV header gives no audio size, and the file's size is unknown: the processed audio can't be " +
+                    "allocated in advance"
+            )
+            if (audioBytes == 0L) throw IOException("The WAV file has no audio data")
             header
         } catch (t: Throwable) {
             Log.e(TAG, "WAV import failed for $uri", t)
@@ -88,10 +98,12 @@ class WavProcessActivity : KrispPageActivity() {
         selectedWavUri = uri
         selectedWavName = name
         selectedWavSize = size
-        val shownSize = if (size > 0) size else header.headerBytes.size + header.dataSize
+        selectedWavHeader = header
+        val audioBytes = header.audioBytes(size) ?: 0L // known: checked above
+        val shownSize = if (size > 0) size else header.dataOffset + audioBytes
         binding.textWavFile.text = getString(
             R.string.txt_wav_loaded_info, name, megabytes(shownSize), header.sampleRate, header.formatName,
-            header.durationSeconds / 60.0
+            header.seconds(audioBytes) / 60.0
         )
         showIdleStatus()
         refreshUi()
@@ -109,10 +121,13 @@ class WavProcessActivity : KrispPageActivity() {
 
     private val saveProcessed = registerForActivityResult(ActivityResultContracts.CreateDocument("audio/wav")) { uri: Uri? ->
         val audio = processedAudio
-        if (uri == null || audio == null) {
+        val format = processedFormat
+        if (uri == null || audio == null || format == null) {
             if (audio != null) binding.textProcessStatus.text = getString(R.string.txt_save_canceled)
             return@registerForActivityResult
         }
+        // A header made for the audio actually written: the input's may give a wrong size.
+        val header = monoWavHeader(format.audioFormat, format.bitsPerSample, format.sampleRate, audio.size)
         // Hundreds of MB can take a while to write: do it off the UI thread, with the buttons locked so the buffer
         // can't be freed (by loading another file) while it's being written.
         isSaving = true
@@ -121,8 +136,12 @@ class WavProcessActivity : KrispPageActivity() {
         lifecycleScope.launch {
             try {
                 withContext(Dispatchers.IO) {
-                    contentResolver.openFileDescriptor(uri, "w")?.use { pfd -> audio.writeTo(pfd.fd) }
-                        ?: throw IllegalStateException("Unable to open the destination file")
+                    contentResolver.openFileDescriptor(uri, "w")?.use { pfd ->
+                        // Header first, then the samples straight from native memory, on the same file descriptor.
+                        // The stream isn't closed: that would close the descriptor the samples still go to.
+                        FileOutputStream(pfd.fileDescriptor).write(header)
+                        audio.writeTo(pfd.fd)
+                    } ?: throw IllegalStateException("Unable to open the destination file")
                 }
                 processedSaved = true
                 binding.textProcessStatus.text = getString(R.string.txt_saved_to, displayName(uri))
@@ -195,16 +214,19 @@ class WavProcessActivity : KrispPageActivity() {
 
     private fun startProcessing() {
         val wavUri = selectedWavUri ?: return
+        val wavSize = selectedWavSize
+        // The output is the processed audio, as big as the input's: from the file size, or from the header when the
+        // provider doesn't tell the size (the import checked that one of them gives it).
+        val audioBytes = selectedWavHeader?.audioBytes(wavSize) ?: return
         if (!KrispSdk.modelLoaded) return
 
         // Free the previous output first: its memory counts towards what's available for the next one.
         clearProcessed()
-        val wavSize = selectedWavSize
-        if (wavSize > 0) {
-            memoryShortageFor(wavSize)?.let { shortage ->
-                showError(getString(R.string.title_processing_error), shortage)
-                return
-            }
+        memoryShortageFor(audioBytes)?.let { shortage ->
+            showIdleStatus()
+            refreshUi()
+            showError(getString(R.string.title_processing_error), shortage)
+            return
         }
 
         val lowPrecision = binding.checkboxLowPrecision.isChecked
@@ -221,10 +243,17 @@ class WavProcessActivity : KrispPageActivity() {
                     processWavFile(wavUri, wavSize, lowPrecision)
                 }
                 processedAudio = result.buffer
+                processedFormat = result.header
                 inFlightOutput = null
                 lastRunLowPrecision = lowPrecision
                 showStats(result.stats)
-                binding.textProcessStatus.text = getString(R.string.txt_process_done)
+                val missing = result.stats.missingSeconds
+                binding.textProcessStatus.text = if (missing > 0) {
+                    Log.w(TAG, "$wavUri ended ${missing}s before the audio its header declares")
+                    getString(R.string.txt_process_done_missing, missing)
+                } else {
+                    getString(R.string.txt_process_done)
+                }
                 Log.i(TAG, "Processed ${result.stats.processedFrames} frames, lowPrecision=$lowPrecision, " +
                     "cpuFp16=${KrispSdk.cpuHasFp16}: ${result.stats}")
             } catch (stopped: WavProcessingStoppedException) {
@@ -308,24 +337,25 @@ class WavProcessActivity : KrispPageActivity() {
      * enableLowPrecisionExecution.
      */
     private fun processWavFile(uri: Uri, inputSize: Long, lowPrecision: Boolean): ProcessedAudio {
+        var header: WavHeader? = null
         val processor = WavStreamProcessor(
             openInput = { contentResolver.openInputStream(uri) ?: throw IllegalStateException("Unable to open $uri") },
             onPcmFloatStartSession = { sampleRate -> KrispSdk.startFileSessionPcmFloat(sampleRate, lowPrecision) },
             onPcm16StartSession = { sampleRate -> KrispSdk.startFileSessionPcm16(sampleRate, lowPrecision) },
             onPcm16Frame = KrispSdk::processFileFramePcm16,
             onFloat32Frame = KrispSdk::processFileFramePcmFloat,
-            onHeader = { _, stats -> runOnUiThread { if (!isDestroyed) showStats(stats) } },
+            onHeader = { hdr, stats ->
+                header = hdr
+                runOnUiThread { if (!isDestroyed) showStats(stats) }
+            },
             onProgress = { stats -> runOnUiThread { if (!isDestroyed) showStats(stats) } },
             isStopped = { stopRequested.get() }
         )
         try {
-            val stats = processor.process { capacity ->
-                // The output is the header plus the processed audio, so never bigger than the input file. The header's
-                // data size alone can't be trusted (some recorders leave it wrong); the file size can.
-                val bytes = if (inputSize > 0) minOf(inputSize, capacity) else capacity
-                NativeAudioBuffer.allocate(bytes).also { inFlightOutput = it }
+            val stats = processor.process(inputSize) { capacity ->
+                NativeAudioBuffer.allocate(capacity).also { inFlightOutput = it }
             }
-            return ProcessedAudio(checkNotNull(inFlightOutput), stats)
+            return ProcessedAudio(checkNotNull(inFlightOutput), checkNotNull(header), stats)
         } catch (t: Throwable) {
             inFlightOutput?.release()
             inFlightOutput = null

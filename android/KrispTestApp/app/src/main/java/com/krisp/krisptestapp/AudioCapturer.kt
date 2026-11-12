@@ -201,7 +201,16 @@ class AudioCapturer(
                         countProcessed(1, nanos, nanos)
                     }
                     CaptureMode.DISTRIBUTED -> {
-                        if (block < 0) block = freeBlocks.take()
+                        if (block < 0) {
+                            // No free block: NC hasn't finished the previous block in the time this one took to fill,
+                            // so it runs slower than realtime. Waiting here would stall the microphone, and its audio
+                            // would be lost unnoticed: the run stops with an error instead.
+                            block = freeBlocks.poll() ?: throw IllegalStateException(
+                                "Krisp NC is slower than realtime: block ${blocksProcessed.get() + 1} wasn't " +
+                                    "processed by the time the next block was full. The capture was stopped, as " +
+                                    "waiting would lose microphone audio."
+                            )
+                        }
                         check(KrispSdk.storeCaptureFrame(run, block, framesInBlock, frame, 0)) {
                             "Storing a captured frame in block $block failed"
                         }
