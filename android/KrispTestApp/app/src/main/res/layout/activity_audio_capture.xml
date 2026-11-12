@@ -1,0 +1,256 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Audio Capture page, laid out like the iOS app's AudioCaptureView. -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    tools:context=".AudioCaptureActivity">
+
+    <!-- gravity center: fillViewport stretches this to the screen height, so the content sits in the middle when it
+         fits, and scrolls when it doesn't. -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Header: Krisp icon + app name -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="72dp"
+                android:layout_height="72dp"
+                android:layout_marginEnd="16dp"
+                android:contentDescription="@string/app_name"
+                android:src="@drawable/krisp_icon" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/txt_header"
+                android:textSize="28sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/text_sdk_version"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textSize="14sp"
+            tools:text="Krisp SDK Version: 9.21.0.1241" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="16dp"
+            android:text="@string/txt_capture_title"
+            android:textSize="24sp"
+            android:textStyle="bold" />
+
+        <!-- Select model -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/button_model_file"
+                android:layout_width="220dp"
+                android:layout_height="wrap_content"
+                android:text="@string/btn_model_name"
+                android:textAllCaps="false" />
+
+            <TextView
+                android:id="@+id/status_model"
+                style="@style/StatusMark"
+                android:text="@string/status_fail" />
+        </LinearLayout>
+
+        <!-- NcSessionConfig::enableLowPrecisionExecution of the next capture -->
+        <CheckBox
+            android:id="@+id/checkbox_low_precision"
+            android:layout_width="220dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="52dp"
+            android:text="@string/chk_low_precision" />
+
+        <!-- Start / Stop -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/button_capture"
+                android:layout_width="220dp"
+                android:layout_height="wrap_content"
+                android:text="@string/btn_start_capture"
+                android:textAllCaps="false" />
+
+            <TextView
+                android:id="@+id/status_capture"
+                style="@style/StatusMark"
+                android:text="@string/status_fail" />
+        </LinearLayout>
+
+        <!-- Capture mode, like the iOS segmented picker -->
+        <RadioGroup
+            android:id="@+id/group_capture_mode"
+            android:layout_width="220dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:layout_marginEnd="52dp"
+            android:checkedButton="@id/radio_realtime"
+            android:orientation="horizontal">
+
+            <RadioButton
+                android:id="@+id/radio_realtime"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/txt_mode_realtime" />
+
+            <RadioButton
+                android:id="@+id/radio_distributed"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/txt_mode_distributed" />
+        </RadioGroup>
+
+        <!-- Duration -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                style="@style/FieldLabel"
+                android:text="@string/txt_duration" />
+
+            <EditText
+                android:id="@+id/edit_duration"
+                style="@style/NumberField"
+                android:autofillHints=""
+                android:hint="@string/txt_duration"
+                android:inputType="number"
+                android:text="@string/default_duration_minutes" />
+
+            <TextView
+                style="@style/FieldUnit"
+                android:text="@string/txt_minutes" />
+        </LinearLayout>
+
+        <!-- Block size: Distributed mode only (kept in the layout, invisible otherwise, like iOS) -->
+        <LinearLayout
+            android:id="@+id/row_block_size"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:visibility="invisible">
+
+            <TextView
+                style="@style/FieldLabel"
+                android:text="@string/txt_block_size" />
+
+            <EditText
+                android:id="@+id/edit_block_size"
+                style="@style/NumberField"
+                android:autofillHints=""
+                android:hint="@string/txt_block_size"
+                android:inputType="numberDecimal"
+                android:text="@string/default_block_minutes" />
+
+            <TextView
+                style="@style/FieldUnit"
+                android:text="@string/txt_minutes" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/text_model_file"
+            style="@style/InfoLine"
+            android:layout_marginTop="8dp"
+            android:text="@string/txt_model" />
+
+        <TextView
+            android:id="@+id/text_capture_status"
+            style="@style/InfoLine"
+            android:layout_marginTop="8dp"
+            android:text="@string/txt_capture_select_model"
+            android:textStyle="bold" />
+
+        <!-- Stats -->
+        <TextView
+            android:id="@+id/text_minutes"
+            style="@style/InfoLine"
+            android:layout_marginTop="8dp"
+            tools:text="Processing Duration: 3 minutes" />
+
+        <TextView
+            android:id="@+id/text_capture_audio"
+            style="@style/InfoLine"
+            tools:text="Audio processed: 3:12.4 of 3:12.6 captured (48000 Hz, 10 ms frames)" />
+
+        <TextView
+            android:id="@+id/text_capture_cpu"
+            style="@style/InfoLine"
+            tools:text="NC time: 5.21 s · CPU load: 2.7% of realtime" />
+
+        <TextView
+            android:id="@+id/text_capture_frames"
+            style="@style/InfoLine"
+            tools:text="Per frame: avg 0.271 ms · max 1.932 ms" />
+
+        <!-- The last 10 s of processing: rising times on a slower core or clock point at the scheduler, not the SDK -->
+        <TextView
+            android:id="@+id/text_capture_interval"
+            style="@style/InfoLine"
+            tools:text="Last 10 s: avg 0.268 ms · max 0.911 ms · cpu7 @ 2400 MHz" />
+
+        <TextView
+            android:id="@+id/text_capture_blocks"
+            style="@style/InfoLine"
+            tools:text="Blocks processed: 3" />
+
+        <TextView
+            android:id="@+id/text_precision"
+            style="@style/InfoLine"
+            tools:text="Low precision: on · CPU FP16: yes" />
+
+        <!-- Save -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/button_save"
+                android:layout_width="220dp"
+                android:layout_height="wrap_content"
+                android:text="@string/btn_save_name"
+                android:textAllCaps="false" />
+
+            <TextView
+                android:id="@+id/status_save"
+                style="@style/StatusMark"
+                android:text="@string/status_fail" />
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>
